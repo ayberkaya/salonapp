@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
+import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -46,11 +47,21 @@ export default function CustomerSearch({ profile, showCreateButton = true }: { p
     birthDay?: number,
     birthMonth?: number
   ) => {
+    // Her kelimenin ilk harfini büyük yap
+    const capitalizeWords = (str: string) => {
+      return str
+        .toLowerCase()
+        .trim()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+    }
+    
     const { data, error } = await supabase
       .from('customers')
       .insert({
         salon_id: profile.salon_id,
-        full_name: name,
+        full_name: capitalizeWords(name),
         phone: phone,
         province: province || null,
         district: district || null,
@@ -182,12 +193,23 @@ function CreateCustomerModal({
   const [birthMonth, setBirthMonth] = useState<number | ''>('')
   const [consent, setConsent] = useState(false)
 
+  // İl değiştiğinde ilçe listesini sıfırla
+  const handleProvinceChange = (selectedProvince: string) => {
+    setProvince(selectedProvince)
+    setDistrict('') // İl değişince ilçeyi sıfırla
+  }
+
+  // Seçilen ile göre ilçe listesi
+  const districts = province ? (turkeyCities[province] || []) : []
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name && phone && consent) {
+    if (name && phone && phone.length === 10 && consent) {
+      // Telefon numarasını +90 ile birleştir
+      const fullPhone = `+90${phone}`
       onCreate(
         name, 
-        phone, 
+        fullPhone, 
         province || undefined, 
         district || undefined, 
         birthDay ? Number(birthDay) : undefined,
@@ -208,7 +230,16 @@ function CreateCustomerModal({
               required
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value
+                // Her kelimenin ilk harfini büyük yap
+                const capitalized = value
+                  .toLowerCase()
+                  .split(' ')
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')
+                setName(capitalized)
+              }}
               autoFocus
             />
           </div>
@@ -234,23 +265,34 @@ function CreateCustomerModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">İl</label>
-            <input
-              type="text"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+            <select
               value={province}
-              onChange={(e) => setProvince(e.target.value)}
-              placeholder="İl"
-            />
+              onChange={(e) => handleProvinceChange(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">İl Seçiniz</option>
+              {turkeyProvinces.map((prov) => (
+                <option key={prov} value={prov}>
+                  {prov}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">İlçe</label>
-            <input
-              type="text"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+            <select
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
-              placeholder="İlçe"
-            />
+              disabled={!province}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option value="">İlçe Seçiniz</option>
+              {districts.map((dist) => (
+                <option key={dist} value={dist}>
+                  {dist}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Doğum Günü</label>

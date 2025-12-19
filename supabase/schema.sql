@@ -27,6 +27,7 @@ CREATE TABLE customers (
   district TEXT,
   birth_day INTEGER CHECK (birth_day >= 1 AND birth_day <= 31),
   birth_month INTEGER CHECK (birth_month >= 1 AND birth_month <= 12),
+  hair_color TEXT,
   kvkk_consent_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_visit_at TIMESTAMP WITH TIME ZONE,

@@ -51,6 +51,7 @@ export type Database = {
           district: string | null
           birth_day: number | null
           birth_month: number | null
+          hair_color: string | null
           kvkk_consent_at: string | null
           created_at: string
           last_visit_at: string | null
@@ -64,6 +65,7 @@ export type Database = {
           district?: string | null
           birth_day?: number | null
           birth_month?: number | null
+          hair_color?: string | null
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           district?: string | null
           birth_day?: number | null
           birth_month?: number | null
+          hair_color?: string | null
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null

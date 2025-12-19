@@ -8,6 +8,7 @@ import { useToast } from '@/lib/toast-context'
 import { Search, Plus, Calendar, Users, Clock, X, ArrowRight } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
@@ -108,9 +109,19 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
       const districtValue = district?.trim() || null
 
       // Build insert object - start with only required fields
+      // Her kelimenin ilk harfini büyük yap
+      const capitalizeWords = (str: string) => {
+        return str
+          .toLowerCase()
+          .trim()
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      }
+      
       const insertData: any = {
         salon_id: profile.salon_id,
-        full_name: name.trim(),
+        full_name: capitalizeWords(name),
         phone: phone.trim(),
         kvkk_consent_at: new Date().toISOString(),
       }
@@ -169,12 +180,22 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
           console.log('Retrying with only required fields (salon_id, full_name, phone, kvkk_consent_at)...')
           
           // Retry with only required fields - no optional columns
-          const retryData: any = {
-            salon_id: profile.salon_id,
-            full_name: name.trim(),
-            phone: phone.trim(),
-            kvkk_consent_at: new Date().toISOString(),
-          }
+            // Her kelimenin ilk harfini büyük yap
+            const capitalizeWords = (str: string) => {
+              return str
+                .toLowerCase()
+                .trim()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+            }
+            
+            const retryData: any = {
+              salon_id: profile.salon_id,
+              full_name: capitalizeWords(name),
+              phone: phone.trim(),
+              kvkk_consent_at: new Date().toISOString(),
+            }
           
           const { data: retryDataResult, error: retryError } = await supabase
             .from('customers')
@@ -566,6 +587,15 @@ function CreateCustomerModal({
   const [birthMonth, setBirthMonth] = useState<number | ''>('')
   const [consent, setConsent] = useState(false)
 
+  // İl değiştiğinde ilçe listesini sıfırla
+  const handleProvinceChange = (selectedProvince: string) => {
+    setProvince(selectedProvince)
+    setDistrict('') // İl değişince ilçeyi sıfırla
+  }
+
+  // Seçilen ile göre ilçe listesi
+  const districts = province ? (turkeyCities[province] || []) : []
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (name && phone && phone.length === 10 && consent) {
@@ -593,7 +623,16 @@ function CreateCustomerModal({
             type="text"
             required
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              // Her kelimenin ilk harfini büyük yap
+              const capitalized = value
+                .toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+              setName(capitalized)
+            }}
             autoFocus
           />
         </div>
@@ -623,23 +662,36 @@ function CreateCustomerModal({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             İl
           </label>
-          <Input
-            type="text"
+          <select
             value={province}
-            onChange={(e) => setProvince(e.target.value)}
-            placeholder="İl"
-          />
+            onChange={(e) => handleProvinceChange(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">İl Seçiniz</option>
+            {turkeyProvinces.map((prov) => (
+              <option key={prov} value={prov}>
+                {prov}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             İlçe
           </label>
-          <Input
-            type="text"
+          <select
             value={district}
             onChange={(e) => setDistrict(e.target.value)}
-            placeholder="İlçe"
-          />
+            disabled={!province}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">İlçe Seçiniz</option>
+            {districts.map((dist) => (
+              <option key={dist} value={dist}>
+                {dist}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
