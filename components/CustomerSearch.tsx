@@ -377,7 +377,7 @@ function VisitSessionModal({
 
   const generateVisitToken = async () => {
     const tokenValue = crypto.randomUUID()
-    const expiresAtDate = new Date(Date.now() + 60 * 1000) // 60 seconds
+    const expiresAtDate = new Date(Date.now() + 90 * 1000) // 90 seconds
 
     const { data, error } = await supabase
       .from('visit_tokens')
@@ -397,7 +397,10 @@ function VisitSessionModal({
       const baseUrl = getAppUrl()
       const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}`
       console.log('QR Code URL:', checkinUrl) // Debug: QR kod URL'sini kontrol et
+      console.log('Token expires at:', expiresAtDate.toISOString()) // Debug: Token expiration
       setQrUrl(checkinUrl)
+    } else {
+      console.error('Token creation error:', error)
     }
   }
 

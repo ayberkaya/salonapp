@@ -516,7 +516,10 @@ function QuickVisitModal({
         const baseUrl = getAppUrl()
         const fullUrl = `${baseUrl}/checkin?token=${tokenValue}`
         console.log('QR Code URL:', fullUrl) // Debug: QR kod URL'sini kontrol et
+        console.log('Token expires at:', expiresAtDate.toISOString()) // Debug: Token expiration
         setQrUrl(fullUrl)
+      } else {
+        console.error('Token creation error:', error)
       }
     }
 

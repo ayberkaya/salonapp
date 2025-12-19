@@ -128,9 +128,11 @@ export default function CustomerDetail({
       const baseUrl = getAppUrl()
       const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}`
       console.log('QR Code URL:', checkinUrl) // Debug: QR kod URL'sini kontrol et
+      console.log('Token expires at:', expiresAtDate.toISOString()) // Debug: Token expiration
       setQrUrl(checkinUrl)
       setShowQRModal(true)
     } else {
+      console.error('Token creation error:', error)
       showToast('Ziyaret başlatılamadı', 'error')
     }
   }

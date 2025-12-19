@@ -21,15 +21,34 @@ export async function POST(request: Request) {
       .eq('token', token)
       .single()
 
-    if (tokenError || !tokenData) {
+    if (tokenError) {
+      console.error('Token lookup error:', tokenError)
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
+        { error: 'Invalid token' },
         { status: 404 }
       )
     }
 
-    const now = new Date()
-    const expiresAt = new Date(tokenData.expires_at)
+    if (!tokenData) {
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 404 }
+      )
+    }
+
+    // Check expiration - use milliseconds comparison to avoid timezone issues
+    const now = Date.now()
+    const expiresAt = new Date(tokenData.expires_at).getTime()
+    
+    // Debug logging
+    console.log('Token check:', {
+      token: token.substring(0, 8) + '...',
+      now: new Date(now).toISOString(),
+      expiresAt: new Date(expiresAt).toISOString(),
+      expiresAtRaw: tokenData.expires_at,
+      timeRemaining: Math.floor((expiresAt - now) / 1000),
+      isExpired: now > expiresAt
+    })
 
     if (now > expiresAt) {
       return NextResponse.json(
