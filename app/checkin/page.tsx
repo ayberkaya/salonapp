@@ -77,126 +77,113 @@ function CheckInContent() {
   const handleConfirmVisit = async () => {
     if (!token) {
       setError('Missing visit token')
+      setStep('error')
       return
     }
 
     setStep('confirming')
     setError(null)
 
-    // Verify token is valid and not expired
-    const { data: tokenData, error: tokenError } = await supabase
-      .from('visit_tokens')
-      .select('*, customers(*)')
-      .eq('token', token)
-      .single()
-
-    if (tokenError || !tokenData) {
-      setError('Invalid or expired token')
-      setStep('error')
-      return
-    }
-
-    const now = new Date()
-    const expiresAt = new Date(tokenData.expires_at)
-
-    if (now > expiresAt) {
-      setError('Token has expired')
-      setStep('error')
-      return
-    }
-
-    if (tokenData.used_at) {
-      setError('Token has already been used')
-      setStep('error')
-      return
-    }
-
-    const customer = tokenData.customers as { id: string; phone: string; full_name: string }
-
-    // Check if phone matches (if we have phone from OTP)
-    if (phone && customer.phone !== phone) {
-      setError('Phone number does not match')
-      setStep('error')
-      return
-    }
-
-    // Optional: Check max 1 visit per day
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    const { data: todayVisits } = await supabase
-      .from('visits')
-      .select('id')
-      .eq('customer_id', customer.id)
-      .gte('visited_at', today.toISOString())
-
-    if (todayVisits && todayVisits.length > 0) {
-      setError('You have already checked in today')
-      setStep('error')
-      return
-    }
-
-    // Create visit record
-    const { error: visitError } = await supabase
-      .from('visits')
-      .insert({
-        salon_id: tokenData.salon_id,
-        customer_id: tokenData.customer_id,
-        created_by: tokenData.created_by,
-        visited_at: new Date().toISOString(),
+    try {
+      const response = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, phone }),
       })
 
-    if (visitError) {
-      setError('Failed to record visit')
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to confirm visit')
+        setStep('error')
+        return
+      }
+
+      setStep('success')
+    } catch (err) {
+      setError('Network error. Please try again.')
       setStep('error')
-      return
     }
-
-    // Mark token as used
-    await supabase
-      .from('visit_tokens')
-      .update({ used_at: new Date().toISOString() })
-      .eq('id', tokenData.id)
-
-    // Update customer last_visit_at
-    await supabase
-      .from('customers')
-      .update({ last_visit_at: new Date().toISOString() })
-      .eq('id', customer.id)
-
-    setStep('success')
   }
 
   if (step === 'success') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-green-50 px-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
-          <div className="mb-4 text-6xl">🎉</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Visit Recorded!</h1>
-          <p className="text-gray-600">Thank you for your visit.</p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50 px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+              <svg
+                className="h-12 w-12 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+          </div>
+          <h1 className="mb-2 text-3xl font-bold text-gray-900">Ziyaret Onaylandı!</h1>
+          <p className="text-lg text-gray-600">Teşekkür ederiz.</p>
         </div>
       </div>
     )
   }
 
   if (step === 'error') {
+    const errorMessages: Record<string, string> = {
+      'Token has expired': 'QR kodun süresi dolmuş. Lütfen yeni bir QR kod oluşturun.',
+      'Token has already been used': 'Bu QR kod zaten kullanılmış.',
+      'Invalid or expired token': 'Geçersiz veya süresi dolmuş QR kod.',
+      'You have already checked in today': 'Bugün zaten ziyaret kaydınız var.',
+      'Phone number does not match': 'Telefon numarası eşleşmiyor.',
+      'Missing visit token': 'QR kod bulunamadı.',
+    }
+
+    const errorTitle = errorMessages[error || ''] || 'Bir hata oluştu'
+    const canRetry = !error?.includes('expired') && !error?.includes('already been used')
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-red-50 px-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
-          <div className="mb-4 text-6xl">❌</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">Error</h1>
-          <p className="mb-4 text-gray-600">{error || 'Something went wrong'}</p>
-          <button
-            onClick={() => {
-              setStep('phone')
-              setError(null)
-              setPhone('')
-              setOtp('')
-            }}
-            className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+              <svg
+                className="h-12 w-12 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+          </div>
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">Hata</h1>
+          <p className="mb-6 text-gray-600">{errorTitle}</p>
+          {canRetry && (
+            <button
+              onClick={() => {
+                setStep('phone')
+                setError(null)
+                setPhone('')
+                setOtp('')
+              }}
+              className="w-full rounded-lg bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Tekrar Dene
+            </button>
+          )}
         </div>
       </div>
     )
@@ -205,9 +192,12 @@ function CheckInContent() {
   if (step === 'confirming') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
-          <div className="mb-4 text-4xl">⏳</div>
-          <h1 className="mb-2 text-xl font-bold text-gray-900">Confirming visit...</h1>
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+          <div className="mb-6 flex justify-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+          </div>
+          <h1 className="mb-2 text-xl font-semibold text-gray-900">Ziyaret onaylanıyor...</h1>
+          <p className="text-sm text-gray-600">Lütfen bekleyin</p>
         </div>
       </div>
     )
@@ -215,26 +205,32 @@ function CheckInContent() {
 
   if (step === 'otp') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-          <h1 className="mb-6 text-2xl font-bold text-gray-900">Enter OTP</h1>
-          <p className="mb-4 text-sm text-gray-600">
-            We sent a code to {phone}
-          </p>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 px-4 py-8">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+          <div className="mb-6 text-center">
+            <h1 className="mb-2 text-3xl font-bold text-gray-900">OTP Kodu</h1>
+            <p className="text-gray-600">
+              {phone} numarasına gönderilen kodu girin
+            </p>
+          </div>
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+            <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
               {error}
             </div>
           )}
-          <form onSubmit={handleOTPSubmit} className="space-y-4">
+          <form onSubmit={handleOTPSubmit} className="space-y-6">
             <div>
+              <label htmlFor="otp" className="mb-2 block text-sm font-medium text-gray-700">
+                6 Haneli Kod
+              </label>
               <input
+                id="otp"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={6}
                 required
-                className="w-full rounded-md border border-gray-300 px-4 py-3 text-center text-2xl tracking-widest focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-4 py-4 text-center text-3xl font-bold tracking-[0.5em] text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="000000"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
@@ -243,9 +239,9 @@ function CheckInContent() {
             </div>
             <button
               type="submit"
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 text-lg font-medium text-white hover:bg-blue-700"
+              className="w-full rounded-lg bg-blue-600 px-6 py-4 text-lg font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Verify
+              Onayla
             </button>
             <button
               type="button"
@@ -254,9 +250,9 @@ function CheckInContent() {
                 setOtp('')
                 setError(null)
               }}
-              className="w-full text-sm text-gray-600 hover:text-gray-800"
+              className="w-full text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
             >
-              Change phone number
+              Telefon numarasını değiştir
             </button>
           </form>
         </div>
@@ -265,23 +261,29 @@ function CheckInContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">Confirm Your Visit</h1>
-        <p className="mb-4 text-sm text-gray-600">
-          Enter your phone number to confirm your visit
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 px-4 py-8">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+        <div className="mb-6 text-center">
+          <h1 className="mb-2 text-3xl font-bold text-gray-900">Ziyaret Onayı</h1>
+          <p className="text-gray-600">
+            Telefon numaranızı girerek ziyareti onaylayın
+          </p>
+        </div>
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+          <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
             {error}
           </div>
         )}
-        <form onSubmit={handlePhoneSubmit} className="space-y-4">
+        <form onSubmit={handlePhoneSubmit} className="space-y-6">
           <div>
+            <label htmlFor="phone" className="mb-2 block text-sm font-medium text-gray-700">
+              Telefon Numarası
+            </label>
             <input
+              id="phone"
               type="tel"
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-4 text-lg text-black transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="+90 555 123 4567"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -290,9 +292,9 @@ function CheckInContent() {
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 text-lg font-medium text-white hover:bg-blue-700"
+            className="w-full rounded-lg bg-blue-600 px-6 py-4 text-lg font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            Send OTP
+            OTP Gönder
           </button>
         </form>
       </div>

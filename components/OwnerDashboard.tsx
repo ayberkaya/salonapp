@@ -12,19 +12,29 @@ function CreateCustomerModal({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (name: string, phone: string, province?: string, district?: string, dateOfBirth?: string) => void
+  onCreate: (name: string, phone: string, province?: string, district?: string, birthDay?: number, birthMonth?: number) => void
 }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [province, setProvince] = useState('')
   const [district, setDistrict] = useState('')
-  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [birthDay, setBirthDay] = useState<number | ''>('')
+  const [birthMonth, setBirthMonth] = useState<number | ''>('')
   const [consent, setConsent] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name && phone && consent) {
-      onCreate(name, phone, province || undefined, district || undefined, dateOfBirth || undefined)
+    if (name && phone && phone.length === 10 && consent) {
+      // Telefon numarasını +90 ile birleştir
+      const fullPhone = `+90${phone}`
+      onCreate(
+        name, 
+        fullPhone, 
+        province || undefined, 
+        district || undefined, 
+        birthDay ? Number(birthDay) : undefined,
+        birthMonth ? Number(birthMonth) : undefined
+      )
     }
   }
 
@@ -46,13 +56,23 @@ function CreateCustomerModal({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Telefon</label>
-            <input
-              type="tel"
-              required
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                +90
+              </span>
+              <input
+                type="tel"
+                required
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 pl-12"
+                value={phone}
+                onChange={(e) => {
+                  // Sadece rakamları kabul et ve maksimum 10 karakter
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                  setPhone(value)
+                }}
+                placeholder="5551234567"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">İl</label>
@@ -75,13 +95,36 @@ function CreateCustomerModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Doğum Tarihi</label>
-            <input
-              type="date"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-              value={dateOfBirth}
-              onChange={(e) => setDateOfBirth(e.target.value)}
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Doğum Günü</label>
+            <div className="flex gap-2">
+              <select
+                value={birthDay}
+                onChange={(e) => setBirthDay(e.target.value ? Number(e.target.value) : '')}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Gün</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <option key={day} value={day}>
+                    {day}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={birthMonth}
+                onChange={(e) => setBirthMonth(e.target.value ? Number(e.target.value) : '')}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Ay</option>
+                {[
+                  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+                ].map((month, index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="flex items-center">
             <input
@@ -231,7 +274,8 @@ export default function OwnerDashboard({ profile, salon }: { profile: Profile; s
               phone: string,
               province?: string,
               district?: string,
-              dateOfBirth?: string
+              birthDay?: number,
+              birthMonth?: number
             ) => {
               const { error } = await supabase
                 .from('customers')
@@ -241,7 +285,8 @@ export default function OwnerDashboard({ profile, salon }: { profile: Profile; s
                   phone: phone,
                   province: province || null,
                   district: district || null,
-                  date_of_birth: dateOfBirth || null,
+                  birth_day: birthDay || null,
+                  birth_month: birthMonth || null,
                   kvkk_consent_at: new Date().toISOString(),
                 })
               

@@ -47,6 +47,10 @@ export type Database = {
           salon_id: string
           full_name: string
           phone: string
+          province: string | null
+          district: string | null
+          birth_day: number | null
+          birth_month: number | null
           kvkk_consent_at: string | null
           created_at: string
           last_visit_at: string | null
@@ -56,6 +60,10 @@ export type Database = {
           salon_id: string
           full_name: string
           phone: string
+          province?: string | null
+          district?: string | null
+          birth_day?: number | null
+          birth_month?: number | null
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null
@@ -65,6 +73,10 @@ export type Database = {
           salon_id?: string
           full_name?: string
           phone?: string
+          province?: string | null
+          district?: string | null
+          birth_day?: number | null
+          birth_month?: number | null
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
+import { Search, Plus, Calendar, Users, Clock, X, ArrowRight } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
@@ -30,6 +31,8 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   const [searchResults, setSearchResults] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showQuickVisitModal, setShowQuickVisitModal] = useState(false)
+  const [quickVisitCustomer, setQuickVisitCustomer] = useState<Customer | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Debounced search
@@ -64,17 +67,14 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl+K to focus search
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         searchInputRef.current?.focus()
       }
-      // Enter to open first result
       if (e.key === 'Enter' && searchResults.length > 0 && document.activeElement === searchInputRef.current) {
         e.preventDefault()
         handleCustomerClick(searchResults[0])
       }
-      // Esc to clear
       if (e.key === 'Escape' && searchQuery) {
         setSearchQuery('')
         searchInputRef.current?.focus()
@@ -89,33 +89,135 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
     router.push(`/customers/${customer.id}`)
   }
 
+  const handleQuickVisit = async (customer: Customer) => {
+    setQuickVisitCustomer(customer)
+    setShowQuickVisitModal(true)
+  }
+
   const handleCreateCustomer = async (
     name: string,
     phone: string,
     province?: string,
     district?: string,
-    dateOfBirth?: string
+    birthDay?: number,
+    birthMonth?: number
   ) => {
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({
-        salon_id: profile.salon_id,
-        full_name: name,
-        phone: phone,
-        province: province || null,
-        district: district || null,
-        date_of_birth: dateOfBirth || null,
-        kvkk_consent_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
+    try {
+      // Clean up empty strings - only use if they have actual values
+      const provinceValue = province?.trim() || null
+      const districtValue = district?.trim() || null
 
-    if (!error && data) {
-      showToast('Müşteri başarıyla eklendi', 'success')
-      setShowCreateModal(false)
-      router.push(`/customers/${data.id}`)
-    } else {
-      showToast('Müşteri eklenirken hata oluştu', 'error')
+      // Build insert object - start with only required fields
+      const insertData: any = {
+        salon_id: profile.salon_id,
+        full_name: name.trim(),
+        phone: phone.trim(),
+        kvkk_consent_at: new Date().toISOString(),
+      }
+      
+      // Add optional fields if provided
+      if (provinceValue) insertData.province = provinceValue
+      if (districtValue) insertData.district = districtValue
+      if (birthDay) insertData.birth_day = birthDay
+      if (birthMonth) insertData.birth_month = birthMonth
+
+      console.log('Attempting to insert customer with data:', JSON.stringify(insertData, null, 2))
+      console.log('Profile salon_id:', profile.salon_id)
+      
+      const result = await supabase
+        .from('customers')
+        .insert(insertData)
+        .select()
+        .single()
+
+      const { data, error } = result
+      
+      console.log('Insert result:', {
+        hasData: !!data,
+        hasError: !!error,
+        dataKeys: data ? Object.keys(data) : null,
+        errorType: error ? typeof error : null,
+        errorKeys: error ? Object.keys(error) : [],
+      })
+      
+      if (error) {
+        // Extract error information - error has code, details, hint, message properties
+        const errorCode = error.code || ''
+        const errorMessage = error.message || ''
+        const errorDetails = error.details || ''
+        const errorHint = error.hint || ''
+        
+        // Log detailed error information
+        console.error('Customer creation error:', {
+          code: errorCode,
+          message: errorMessage,
+          details: errorDetails,
+          hint: errorHint,
+          insertData,
+          profileSalonId: profile.salon_id
+        })
+        
+        // Combine all error messages for checking
+        const fullErrorMessage = errorMessage || errorDetails || errorHint || ''
+        
+        // Check for specific error types
+        if (errorCode === '23505' || fullErrorMessage.includes('unique') || fullErrorMessage.includes('duplicate')) {
+          showToast('Bu telefon numarası zaten kayıtlı', 'error')
+        } else if (errorCode === 'PGRST204' || (fullErrorMessage.includes('column') && (fullErrorMessage.includes('does not exist') || fullErrorMessage.includes('Could not find')))) {
+          // Column doesn't exist in schema - try with only required fields
+          console.error('Schema cache issue - column not found:', fullErrorMessage)
+          console.log('Retrying with only required fields (salon_id, full_name, phone, kvkk_consent_at)...')
+          
+          // Retry with only required fields - no optional columns
+          const retryData: any = {
+            salon_id: profile.salon_id,
+            full_name: name.trim(),
+            phone: phone.trim(),
+            kvkk_consent_at: new Date().toISOString(),
+          }
+          
+          const { data: retryDataResult, error: retryError } = await supabase
+            .from('customers')
+            .insert(retryData)
+            .select()
+            .single()
+          
+          if (retryError) {
+            console.error('Retry error:', retryError)
+            showToast('Veritabanı şeması güncel değil. Lütfen migration çalıştırın.', 'error')
+          } else if (retryDataResult) {
+            const missingFields = []
+            if (provinceValue) missingFields.push('İl')
+            if (districtValue) missingFields.push('İlçe')
+            if (birthDay || birthMonth) missingFields.push('Doğum Günü')
+            
+            const missingFieldsText = missingFields.length > 0 
+              ? ` (${missingFields.join(', ')} bilgisi kaydedilemedi - migration gerekli)`
+              : ''
+            
+            showToast(`Müşteri başarıyla eklendi${missingFieldsText}`, 'success')
+            setShowCreateModal(false)
+            router.push(`/customers/${retryDataResult.id}`)
+          }
+        } else if (errorCode === 'PGRST301' || fullErrorMessage.includes('permission denied') || fullErrorMessage.includes('policy') || fullErrorMessage.includes('RLS') || fullErrorMessage.includes('row-level security')) {
+          // RLS policy error
+          showToast('Yetki hatası: Müşteri ekleme izniniz yok. Lütfen yönetici ile iletişime geçin.', 'error')
+        } else {
+          // Show the actual error message
+          const displayMessage = errorMessage || errorDetails || errorHint || 'Müşteri eklenirken hata oluştu'
+          showToast(displayMessage, 'error')
+        }
+        return
+      }
+
+      if (data) {
+        showToast('Müşteri başarıyla eklendi', 'success')
+        setShowCreateModal(false)
+        router.push(`/customers/${data.id}`)
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      showToast('Beklenmeyen bir hata oluştu', 'error')
     }
   }
 
@@ -123,67 +225,108 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   const showRecent = !hasSearchResults && initialRecentCustomers.length > 0
 
   return (
-    <div className="space-y-8">
-      {/* Search Section */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Telefon veya isim ile ara..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="text-lg h-14 pr-12 text-black leading-[0px]"
-                autoFocus
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('')
-                    searchInputRef.current?.focus()
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                  aria-label="Clear search"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
+    <div className="space-y-6">
+      {/* Quick Actions */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Bugünkü Ziyaretler</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{todayVisits}</p>
             </div>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              size="lg"
-              className="whitespace-nowrap"
-            >
-              + Yeni Müşteri
-            </Button>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Calendar className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Toplam Müşteri</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{initialRecentCustomers.length}</p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <Users className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
+        </Card>
+        <Card className="p-6 sm:col-span-2 lg:col-span-1">
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            size="lg"
+            className="h-full w-full"
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Yeni Müşteri
+          </Button>
+        </Card>
+        <Card className="p-6 sm:col-span-2 lg:col-span-1">
+          <Button
+            onClick={() => {
+              if (searchResults.length > 0) {
+                handleQuickVisit(searchResults[0])
+              } else if (initialRecentCustomers.length > 0) {
+                handleQuickVisit(initialRecentCustomers[0])
+              } else {
+                showToast('Önce bir müşteri seçin', 'error')
+              }
+            }}
+            size="lg"
+            variant="secondary"
+            className="h-full w-full"
+          >
+            <Clock className="mr-2 h-5 w-5" />
+            Hızlı Ziyaret
+          </Button>
+        </Card>
+      </div>
+
+      {/* Search Section */}
+      <Card className="border border-gray-200 p-6 shadow-sm">
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <Input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Müşteri ara (isim veya telefon)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-14 pl-12 pr-12 text-base text-black"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  searchInputRef.current?.focus()
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                aria-label="Temizle"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
           </div>
 
           {hasSearchResults && (
-            <div className="text-sm text-gray-500">
-              {loading ? 'Aranıyor...' : `${searchResults.length} sonuç bulundu`}
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+                  <span>Aranıyor...</span>
+                </>
+              ) : (
+                <span>
+                  <strong>{searchResults.length}</strong> sonuç bulundu
+                </span>
+              )}
             </div>
           )}
         </div>
       </Card>
-
-      {/* Today's Stats */}
-      {!hasSearchResults && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Bugünkü Ziyaretler</p>
-                <p className="mt-1 text-3xl font-bold text-gray-900">{todayVisits}</p>
-              </div>
-              <Badge variant="success">{todayVisits} ziyaret</Badge>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Search Results */}
       {hasSearchResults && (
@@ -199,6 +342,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
                 key={customer.id}
                 customer={customer}
                 onClick={() => handleCustomerClick(customer)}
+                onQuickVisit={() => handleQuickVisit(customer)}
               />
             ))
           ) : (
@@ -215,13 +359,17 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
       {/* Recent Customers */}
       {showRecent && (
         <div>
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">Son Müşteriler</h2>
-          <div className="space-y-3">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Son Müşteriler</h2>
+            <Badge variant="default">{initialRecentCustomers.length} müşteri</Badge>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {initialRecentCustomers.map((customer) => (
               <CustomerCard
                 key={customer.id}
                 customer={customer}
                 onClick={() => handleCustomerClick(customer)}
+                onQuickVisit={() => handleQuickVisit(customer)}
               />
             ))}
           </div>
@@ -235,36 +383,171 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
           onCreate={handleCreateCustomer}
         />
       )}
+
+      {/* Quick Visit Modal */}
+      {showQuickVisitModal && quickVisitCustomer && (
+        <QuickVisitModal
+          customer={quickVisitCustomer}
+          profile={profile}
+          onClose={() => {
+            setShowQuickVisitModal(false)
+            setQuickVisitCustomer(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function CustomerCard({ customer, onClick }: { customer: Customer; onClick: () => void }) {
+function CustomerCard({ 
+  customer, 
+  onClick,
+  onQuickVisit 
+}: { 
+  customer: Customer
+  onClick: () => void
+  onQuickVisit: () => void
+}) {
+  const lastVisitDate = customer.last_visit_at
+    ? new Date(customer.last_visit_at).toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'short',
+      })
+    : null
+
   return (
-    <Card
-      className="cursor-pointer p-4 transition-all hover:shadow-md"
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900">{customer.full_name}</h3>
+    <Card className="group cursor-pointer p-5 transition-all hover:shadow-lg hover:scale-[1.02]">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0" onClick={onClick}>
+          <h3 className="text-lg font-semibold text-gray-900 truncate">{customer.full_name}</h3>
           <p className="mt-1 text-sm text-gray-600">{customer.phone}</p>
-          {customer.last_visit_at && (
-            <p className="mt-1 text-xs text-gray-500">
-              Son ziyaret: {new Date(customer.last_visit_at).toLocaleDateString('tr-TR')}
+          {lastVisitDate && (
+            <p className="mt-2 text-xs text-gray-500">
+              Son ziyaret: {lastVisitDate}
             </p>
           )}
+          {!lastVisitDate && (
+            <Badge variant="warning" className="mt-2 text-xs">Yeni</Badge>
+          )}
         </div>
-        <svg
-          className="h-5 w-5 text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <div className="ml-3 flex flex-col gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onQuickVisit()
+            }}
+            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            <Clock className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onClick()
+            }}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </Card>
+  )
+}
+
+function QuickVisitModal({
+  customer,
+  profile,
+  onClose,
+}: {
+  customer: Customer
+  profile: Profile
+  onClose: () => void
+}) {
+  const [qrToken, setQrToken] = useState<string | null>(null)
+  const [qrUrl, setQrUrl] = useState<string | null>(null)
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null)
+  const [timeRemaining, setTimeRemaining] = useState(0)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const generateToken = async () => {
+      const tokenValue = crypto.randomUUID()
+      const expiresAtDate = new Date(Date.now() + 60 * 1000)
+
+      const { data, error } = await supabase
+        .from('visit_tokens')
+        .insert({
+          salon_id: profile.salon_id,
+          customer_id: customer.id,
+          created_by: profile.id,
+          token: tokenValue,
+          expires_at: expiresAtDate.toISOString(),
+        })
+        .select()
+        .single()
+
+      if (!error && data) {
+        setQrToken(tokenValue)
+        setExpiresAt(expiresAtDate)
+        setQrUrl(`${window.location.origin}/checkin?token=${tokenValue}`)
+      }
+    }
+
+    generateToken()
+  }, [])
+
+  useEffect(() => {
+    if (!expiresAt) return
+
+    const updateTime = () => {
+      const remaining = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000))
+      setTimeRemaining(remaining)
+    }
+
+    updateTime()
+    const interval = setInterval(updateTime, 1000)
+    return () => clearInterval(interval)
+  }, [expiresAt])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 p-4">
+      <div className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
+        <div className="w-full">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">{customer.full_name}</h2>
+          <p className="mt-2 text-lg text-gray-300">QR kodu tarayarak ziyareti onaylayın</p>
+        </div>
+
+        {qrUrl && (
+          <>
+            <div className="rounded-2xl border-4 border-white bg-white p-6 shadow-2xl">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}&margin=1`}
+                alt="QR Code"
+                className="h-auto w-full max-w-md"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-5xl font-bold text-white sm:text-6xl">{timeRemaining}s</p>
+                <p className="mt-2 text-lg text-gray-300">Kalan süre</p>
+              </div>
+              <div className="h-2 w-64 overflow-hidden rounded-full bg-gray-700 sm:w-96">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-1000"
+                  style={{ width: `${(timeRemaining / 60) * 100}%` }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        <Button variant="secondary" onClick={onClose} className="bg-gray-700 text-white hover:bg-gray-600">
+          Kapat
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -273,19 +556,29 @@ function CreateCustomerModal({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (name: string, phone: string, province?: string, district?: string, dateOfBirth?: string) => void
+  onCreate: (name: string, phone: string, province?: string, district?: string, birthDay?: number, birthMonth?: number) => void
 }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [province, setProvince] = useState('')
   const [district, setDistrict] = useState('')
-  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [birthDay, setBirthDay] = useState<number | ''>('')
+  const [birthMonth, setBirthMonth] = useState<number | ''>('')
   const [consent, setConsent] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name && phone && consent) {
-      onCreate(name, phone, province || undefined, district || undefined, dateOfBirth || undefined)
+    if (name && phone && phone.length === 10 && consent) {
+      // Telefon numarasını +90 ile birleştir
+      const fullPhone = `+90${phone}`
+      onCreate(
+        name, 
+        fullPhone, 
+        province || undefined, 
+        district || undefined, 
+        birthDay ? Number(birthDay) : undefined,
+        birthMonth ? Number(birthMonth) : undefined
+      )
     }
   }
 
@@ -308,13 +601,23 @@ function CreateCustomerModal({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Telefon
           </label>
-          <Input
-            type="tel"
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+90 555 123 4567"
-          />
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base text-gray-500">
+              +90
+            </span>
+            <Input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => {
+                // Sadece rakamları kabul et ve maksimum 10 karakter
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                setPhone(value)
+              }}
+              placeholder="5551234567"
+              className="pl-12"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -340,13 +643,37 @@ function CreateCustomerModal({
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Doğum Tarihi
+            Doğum Günü
           </label>
-          <Input
-            type="date"
-            value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <select
+              value={birthDay}
+              onChange={(e) => setBirthDay(e.target.value ? Number(e.target.value) : '')}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Gün</option>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </select>
+            <select
+              value={birthMonth}
+              onChange={(e) => setBirthMonth(e.target.value ? Number(e.target.value) : '')}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Ay</option>
+              {[
+                'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+              ].map((month, index) => (
+                <option key={index + 1} value={index + 1}>
+                  {month}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="flex items-center">
           <input
@@ -370,7 +697,7 @@ function CreateCustomerModal({
           >
             İptal
           </Button>
-          <Button type="submit" className="flex-1" disabled={!name || !phone || !consent}>
+          <Button type="submit" className="flex-1" disabled={!name || !phone || phone.length !== 10 || !consent}>
             Oluştur
           </Button>
         </div>
@@ -378,4 +705,3 @@ function CreateCustomerModal({
     </Modal>
   )
 }
-

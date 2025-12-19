@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
+import { ArrowLeft, Calendar, Users, Clock, QrCode } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -72,82 +73,147 @@ export default function CustomerDetail({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-4">
         <button
           onClick={() => router.back()}
-          className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+          className="mt-1 rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Geri"
         >
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ArrowLeft className="h-6 w-6" />
         </button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">{customer.full_name}</h1>
-          <p className="mt-1 text-lg text-gray-600">{customer.phone}</p>
+          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">{customer.full_name}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            <p className="text-lg text-gray-600">{customer.phone}</p>
+            {customer.province && customer.district && (
+              <p className="text-sm text-gray-500">
+                {customer.province}, {customer.district}
+              </p>
+            )}
+            {customer.birth_day && customer.birth_month && (
+              <p className="text-sm text-gray-500">
+                Doğum Günü: {customer.birth_day} {[
+                  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+                ][customer.birth_month - 1]}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-4">
-          <p className="text-sm font-medium text-gray-600">Toplam Ziyaret</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{visitCount}</p>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Toplam Ziyaret</p>
+              <p className="mt-2 text-3xl font-bold text-gray-900">{visitCount}</p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm font-medium text-gray-600">Son Ziyaret</p>
-          <p className="mt-1 text-lg font-semibold text-gray-900">{lastVisitDate}</p>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Son Ziyaret</p>
+              <p className="mt-2 text-lg font-semibold text-gray-900">{lastVisitDate}</p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <Calendar className="h-6 w-6 text-green-600" />
+            </div>
+          </div>
         </Card>
-        <Card className="p-4">
-          <p className="text-sm font-medium text-gray-600">Durum</p>
-          <div className="mt-1">
-            {customer.last_visit_at ? (
-              <Badge variant="success">Aktif</Badge>
-            ) : (
-              <Badge variant="warning">Yeni</Badge>
-            )}
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Durum</p>
+              <div className="mt-2">
+                {customer.last_visit_at ? (
+                  <Badge variant="success">Aktif</Badge>
+                ) : (
+                  <Badge variant="warning">Yeni</Badge>
+                )}
+              </div>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+              <Clock className="h-6 w-6 text-yellow-600" />
+            </div>
           </div>
         </Card>
       </div>
 
       {/* Primary CTA */}
-      <Card className="p-6">
-        <Button
-          onClick={handleStartVisit}
-          size="lg"
-          className="w-full"
-        >
-          Ziyaret Başlat
-        </Button>
+      <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+        <div className="text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <QrCode className="h-8 w-8 text-blue-600" />
+            </div>
+          </div>
+          <h3 className="mb-2 text-xl font-semibold text-gray-900">Yeni Ziyaret Başlat</h3>
+          <p className="mb-6 text-sm text-gray-600">
+            QR kod oluşturarak müşterinin ziyaretini onaylamasını sağlayın
+          </p>
+          <Button
+            onClick={handleStartVisit}
+            size="lg"
+            className="w-full sm:w-auto sm:min-w-[200px]"
+          >
+            <QrCode className="mr-2 h-5 w-5" />
+            Ziyaret Başlat
+          </Button>
+        </div>
       </Card>
 
       {/* Visit History */}
       <div>
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Ziyaret Geçmişi</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Ziyaret Geçmişi</h2>
+          {visits.length > 0 && (
+            <Badge variant="default">{visits.length} ziyaret</Badge>
+          )}
+        </div>
         {visits.length > 0 ? (
-          <div className="space-y-2">
-            {visits.map((visit) => (
-              <Card key={visit.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {new Date(visit.visited_at).toLocaleDateString('tr-TR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                    {visit.profiles && (
+          <div className="space-y-3">
+            {visits.map((visit) => {
+              const visitDate = new Date(visit.visited_at)
+              const isToday = visitDate.toDateString() === new Date().toDateString()
+              
+              return (
+                <Card key={visit.id} className="p-4 transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900">
+                          {visitDate.toLocaleDateString('tr-TR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                        {isToday && (
+                          <Badge variant="success" className="text-xs">Bugün</Badge>
+                        )}
+                      </div>
                       <p className="mt-1 text-sm text-gray-600">
-                        Kaydeden: {visit.profiles.full_name}
+                        {visitDate.toLocaleTimeString('tr-TR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </p>
-                    )}
+                      {visit.profiles && (
+                        <p className="mt-2 text-xs text-gray-500">
+                          Kaydeden: {visit.profiles.full_name}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              )
+            })}
           </div>
         ) : (
           <Card className="p-12">
@@ -192,52 +258,105 @@ function QRModal({
   onRegenerate: () => void
 }) {
   const [timeRemaining, setTimeRemaining] = useState(0)
+  const [status, setStatus] = useState<'waiting' | 'expired'>('waiting')
 
   useEffect(() => {
     if (!expiresAt) return
 
     // Initialize time remaining
-    setTimeRemaining(Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)))
-
-    const interval = setInterval(() => {
+    const updateTime = () => {
       const remaining = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000))
       setTimeRemaining(remaining)
-    }, 1000)
+      if (remaining === 0) {
+        setStatus('expired')
+      }
+    }
+
+    updateTime()
+    const interval = setInterval(updateTime, 1000)
 
     return () => clearInterval(interval)
   }, [expiresAt])
 
+  const formatTime = (seconds: number) => {
+    return `${seconds}s`
+  }
+
   return (
-    <Modal isOpen={true} onClose={onClose} size="lg" title={`Ziyaret: ${customerName}`}>
-      <div className="flex flex-col items-center space-y-6">
-        <div className="rounded-lg border-4 border-blue-500 p-4 bg-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 p-4">
+      <div className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
+        {/* Header */}
+        <div className="w-full">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            {customerName}
+          </h2>
+          <p className="mt-2 text-lg text-gray-300">
+            QR kodu tarayarak ziyareti onaylayın
+          </p>
+        </div>
+
+        {/* QR Code */}
+        <div className="rounded-2xl border-4 border-white bg-white p-6 shadow-2xl">
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrUrl)}`}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}&margin=1`}
             alt="QR Code"
-            className="h-64 w-64"
+            className="h-auto w-full max-w-md"
           />
         </div>
-        
-        <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">
-            Kalan süre: {timeRemaining}s
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Müşteri bu QR kodu tarayarak ziyareti onaylamalı
-          </p>
+
+        {/* Countdown */}
+        <div className="space-y-4">
+          {status === 'waiting' ? (
+            <>
+              <div className="text-center">
+                <p className="text-5xl font-bold text-white sm:text-6xl">
+                  {formatTime(timeRemaining)}
+                </p>
+                <p className="mt-2 text-lg text-gray-300">Kalan süre</p>
+              </div>
+              <div className="h-2 w-64 overflow-hidden rounded-full bg-gray-700 sm:w-96">
+                <div
+                  className="h-full bg-blue-500 transition-all duration-1000"
+                  style={{
+                    width: `${(timeRemaining / 60) * 100}%`,
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="text-center">
+              <p className="text-2xl font-semibold text-yellow-400">
+                Süre doldu
+              </p>
+              <p className="mt-2 text-gray-300">
+                Yeni bir QR kod oluşturun
+              </p>
+            </div>
+          )}
         </div>
 
-        {timeRemaining === 0 && (
-          <Button onClick={onRegenerate} className="w-full">
-            Yeni QR Kod Oluştur
+        {/* Actions */}
+        <div className="flex w-full max-w-md flex-col gap-3 sm:flex-row">
+          {status === 'expired' && (
+            <Button
+              onClick={onRegenerate}
+              size="lg"
+              className="flex-1"
+            >
+              Yeni QR Kod Oluştur
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            size="lg"
+            className="flex-1 bg-gray-700 text-white hover:bg-gray-600"
+          >
+            Kapat
           </Button>
-        )}
-
-        <Button variant="ghost" onClick={onClose} className="w-full">
-          Kapat
-        </Button>
+        </div>
       </div>
-    </Modal>
+    </div>
   )
 }
 
