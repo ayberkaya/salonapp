@@ -37,7 +37,7 @@ export default function CustomersList({
             action={
               <button
                 onClick={() => router.push('/home')}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
               >
                 Ana Sayfaya Git
               </button>

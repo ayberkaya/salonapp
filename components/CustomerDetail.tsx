@@ -143,7 +143,7 @@ export default function CustomerDetail({
       <div className="flex items-start gap-4">
         <button
           onClick={() => router.back()}
-          className="mt-1 rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="cursor-pointer mt-1 rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           aria-label="Geri"
         >
           <ArrowLeft className="h-6 w-6" />

@@ -48,7 +48,7 @@ export default function Header({ profile }: { profile: Profile }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                    'cursor-pointer flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'

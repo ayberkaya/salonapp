@@ -325,7 +325,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
                   setSearchQuery('')
                   searchInputRef.current?.focus()
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 aria-label="Temizle"
               >
                 <X className="h-5 w-5" />
@@ -458,7 +458,7 @@ function CustomerCard({
               e.stopPropagation()
               onQuickVisit()
             }}
-            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             <Clock className="h-4 w-4" />
           </button>
@@ -467,7 +467,7 @@ function CustomerCard({
               e.stopPropagation()
               onClick()
             }}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             <ArrowRight className="h-4 w-4" />
           </button>
@@ -496,7 +496,7 @@ function QuickVisitModal({
   useEffect(() => {
     const generateToken = async () => {
       const tokenValue = crypto.randomUUID()
-      const expiresAtDate = new Date(Date.now() + 60 * 1000)
+      const expiresAtDate = new Date(Date.now() + 90 * 1000)
 
       const { data, error } = await supabase
         .from('visit_tokens')
@@ -542,7 +542,7 @@ function QuickVisitModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 p-4">
       <button
         onClick={handleHomeClick}
-        className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-300 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="cursor-pointer fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-300 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label="Ana Sayfa"
       >
         <Home className="h-6 w-6" />
@@ -571,7 +571,7 @@ function QuickVisitModal({
               <div className="h-2 w-64 overflow-hidden rounded-full bg-gray-700 sm:w-96">
                 <div
                   className="h-full bg-blue-500 transition-all duration-1000"
-                  style={{ width: `${(timeRemaining / 60) * 100}%` }}
+                  style={{ width: `${(timeRemaining / 90) * 100}%` }}
                 />
               </div>
             </div>

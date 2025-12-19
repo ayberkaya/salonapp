@@ -173,13 +173,13 @@ function CreateCustomerModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-md border border-gray-300 px-4 py-2 hover:bg-gray-50"
+              className="cursor-pointer flex-1 rounded-md border border-gray-300 px-4 py-2 hover:bg-gray-50"
             >
               İptal
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              className="cursor-pointer flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Oluştur
             </button>
@@ -289,7 +289,7 @@ export default function OwnerDashboard({ profile, salon }: { profile: Profile; s
           <h2 className="text-2xl font-bold text-gray-900">Müşteri Yönetimi</h2>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             + Yeni Müşteri Ekle
           </button>
@@ -417,7 +417,7 @@ export default function OwnerDashboard({ profile, salon }: { profile: Profile; s
             <button
               onClick={handleSendCampaign}
               disabled={sending || !campaignMessage.trim()}
-              className="w-full rounded-lg bg-green-600 px-4 py-3 text-lg font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              className="cursor-pointer w-full rounded-lg bg-green-600 px-4 py-3 text-lg font-medium text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {sending ? 'Gönderiliyor...' : 'SMS Kampanyası Gönder'}
             </button>

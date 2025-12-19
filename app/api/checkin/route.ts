@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const { token, phone } = await request.json()
+    const { token } = await request.json()
 
     if (!token) {
       return NextResponse.json(
@@ -46,14 +46,6 @@ export async function POST(request: Request) {
     }
 
     const customer = tokenData.customers as { id: string; phone: string; full_name: string }
-
-    // Verify phone number matches if provided
-    if (phone && customer.phone !== phone) {
-      return NextResponse.json(
-        { error: 'Phone number does not match' },
-        { status: 403 }
-      )
-    }
 
     // Check if customer already visited today (optional: prevent duplicate visits)
     const today = new Date()

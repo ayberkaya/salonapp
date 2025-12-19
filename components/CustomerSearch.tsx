@@ -119,7 +119,7 @@ export default function CustomerSearch({ profile, showCreateButton = true }: { p
         {showCreateButton && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="rounded-lg bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="cursor-pointer rounded-lg bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             + Yeni Müşteri
           </button>
@@ -152,7 +152,7 @@ export default function CustomerSearch({ profile, showCreateButton = true }: { p
               </div>
               <button
                 onClick={() => setSelectedCustomer(customer)}
-                className="rounded-lg bg-green-600 px-6 py-2 text-lg font-medium text-white hover:bg-green-700"
+                className="cursor-pointer rounded-lg bg-green-600 px-6 py-2 text-lg font-medium text-white hover:bg-green-700"
               >
                 Ziyaret Başlat
               </button>
@@ -344,13 +344,13 @@ function CreateCustomerModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-md border border-gray-300 px-4 py-2 hover:bg-gray-50"
+              className="cursor-pointer flex-1 rounded-md border border-gray-300 px-4 py-2 hover:bg-gray-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              className="cursor-pointer flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
               Oluştur
             </button>
@@ -398,7 +398,6 @@ function VisitSessionModal({
       setQrUrl(checkinUrl)
     }
   }
-  }
 
   useEffect(() => {
     generateVisitToken()
@@ -415,7 +414,7 @@ function VisitSessionModal({
           <h2 className="text-2xl font-bold">Ziyaret Oturumu</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="cursor-pointer text-gray-500 hover:text-gray-700"
           >
             ✕
           </button>
@@ -444,7 +443,7 @@ function VisitSessionModal({
         {timeRemaining === 0 && (
           <button
             onClick={generateVisitToken}
-            className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-3 text-lg font-medium text-white hover:bg-blue-700"
+            className="cursor-pointer mt-4 w-full rounded-lg bg-blue-600 px-4 py-3 text-lg font-medium text-white hover:bg-blue-700"
           >
             Yeni QR Kod Oluştur
           </button>

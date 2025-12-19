@@ -42,7 +42,7 @@ export default function UserMenu({ profile }: { profile: Profile }) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+        className="cursor-pointer flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
       >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
           <User className="h-5 w-5 text-blue-600" />
@@ -65,7 +65,7 @@ export default function UserMenu({ profile }: { profile: Profile }) {
             <Link
               href="/settings"
               onClick={() => setIsOpen(false)}
-              className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+              className="cursor-pointer flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
             >
               <Settings className="h-4 w-4 text-gray-400" />
               <span>Ayarlar</span>
@@ -73,7 +73,7 @@ export default function UserMenu({ profile }: { profile: Profile }) {
             
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+              className="cursor-pointer flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
             >
               <LogOut className="h-4 w-4 text-gray-400" />
               <span>Çıkış Yap</span>
