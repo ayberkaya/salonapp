@@ -164,7 +164,7 @@ export default function CampaignsView({
           <div className="space-y-4">
             <div>
               <textarea
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={4}
                 placeholder="Kampanya mesajınızı yazın..."
                 value={campaignMessage}

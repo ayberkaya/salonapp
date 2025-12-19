@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
+import { getAppUrl } from '@/lib/utils'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -393,9 +394,10 @@ function VisitSessionModal({
     if (!error && data) {
       setToken(tokenValue)
       setExpiresAt(expiresAtDate)
-      const checkinUrl = `${window.location.origin}/checkin?token=${tokenValue}`
+      const checkinUrl = `${getAppUrl()}/checkin?token=${tokenValue}`
       setQrUrl(checkinUrl)
     }
+  }
   }
 
   useEffect(() => {

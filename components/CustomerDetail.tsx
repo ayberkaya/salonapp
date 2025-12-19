@@ -13,6 +13,7 @@ import Modal from '@/components/ui/Modal'
 import EmptyState from '@/components/ui/EmptyState'
 import Input from '@/components/ui/Input'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
+import { getAppUrl } from '@/lib/utils'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -124,7 +125,7 @@ export default function CustomerDetail({
     if (!error && data) {
       setQrToken(tokenValue)
       setExpiresAt(expiresAtDate)
-      const checkinUrl = `${window.location.origin}/checkin?token=${tokenValue}`
+      const checkinUrl = `${getAppUrl()}/checkin?token=${tokenValue}`
       setQrUrl(checkinUrl)
       setShowQRModal(true)
     } else {

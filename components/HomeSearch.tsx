@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { Search, Plus, Calendar, Users, Clock, X, ArrowRight } from 'lucide-react'
+import { Search, Plus, Calendar, Users, Clock, X, ArrowRight, Home } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
@@ -14,6 +14,7 @@ import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
 import { LoadingSkeleton, CustomerCardSkeleton } from '@/components/ui/LoadingSkeleton'
 import Modal from '@/components/ui/Modal'
+import { getAppUrl } from '@/lib/utils'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -485,6 +486,7 @@ function QuickVisitModal({
   profile: Profile
   onClose: () => void
 }) {
+  const router = useRouter()
   const [qrToken, setQrToken] = useState<string | null>(null)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<Date | null>(null)
@@ -511,7 +513,7 @@ function QuickVisitModal({
       if (!error && data) {
         setQrToken(tokenValue)
         setExpiresAt(expiresAtDate)
-        setQrUrl(`${window.location.origin}/checkin?token=${tokenValue}`)
+        setQrUrl(`${getAppUrl()}/checkin?token=${tokenValue}`)
       }
     }
 
@@ -531,8 +533,20 @@ function QuickVisitModal({
     return () => clearInterval(interval)
   }, [expiresAt])
 
+  const handleHomeClick = () => {
+    onClose() // Modal'ı kapat
+    router.push('/home') // Ana sayfaya git
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 p-4">
+      <button
+        onClick={handleHomeClick}
+        className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-300 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Ana Sayfa"
+      >
+        <Home className="h-6 w-6" />
+      </button>
       <div className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
         <div className="w-full">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">{customer.full_name}</h2>

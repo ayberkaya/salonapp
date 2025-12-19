@@ -2,8 +2,10 @@
 
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { smsProvider } from '@/lib/sms'
+import { Home } from 'lucide-react'
 
 function CheckInContent() {
   const searchParams = useSearchParams()
@@ -111,6 +113,13 @@ function CheckInContent() {
   if (step === 'success') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50 px-4">
+        <Link
+          href="/home"
+          className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Ana Sayfa"
+        >
+          <Home className="h-6 w-6" />
+        </Link>
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
           <div className="mb-6 flex justify-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
@@ -151,6 +160,13 @@ function CheckInContent() {
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-red-50 px-4">
+        <Link
+          href="/home"
+          className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Ana Sayfa"
+        >
+          <Home className="h-6 w-6" />
+        </Link>
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
           <div className="mb-6 flex justify-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
@@ -192,6 +208,13 @@ function CheckInContent() {
   if (step === 'confirming') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <Link
+          href="/home"
+          className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Ana Sayfa"
+        >
+          <Home className="h-6 w-6" />
+        </Link>
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
           <div className="mb-6 flex justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
@@ -206,6 +229,13 @@ function CheckInContent() {
   if (step === 'otp') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 px-4 py-8">
+        <Link
+          href="/home"
+          className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Ana Sayfa"
+        >
+          <Home className="h-6 w-6" />
+        </Link>
         <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
           <div className="mb-6 text-center">
             <h1 className="mb-2 text-3xl font-bold text-gray-900">OTP Kodu</h1>
@@ -262,6 +292,13 @@ function CheckInContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 px-4 py-8">
+      <Link
+        href="/home"
+        className="fixed left-4 top-4 z-50 rounded-lg p-2 text-gray-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Ana Sayfa"
+      >
+        <Home className="h-6 w-6" />
+      </Link>
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
         <div className="mb-6 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-900">Ziyaret Onayı</h1>

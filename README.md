@@ -160,20 +160,63 @@ The SMS system uses an abstraction layer (`lib/sms/index.ts`). In MVP, it's mock
 
 ### Vercel
 
-1. Push code to GitHub
-2. Import project in Vercel
-3. Add environment variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy
+1. **Push code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Prepare for deployment"
+   git push origin main
+   ```
+
+2. **Import project in Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "Add New" → "Project"
+   - Import your GitHub repository
+   - Select the repository and click "Import"
+
+3. **Add Environment Variables**
+   
+   In Vercel project settings, go to **Settings** → **Environment Variables** and add:
+   
+   **Required:**
+   - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+     - Get from: Supabase Dashboard → Settings → API → Project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon key
+     - Get from: Supabase Dashboard → Settings → API → Project API keys → `anon` `public`
+   - `NEXT_PUBLIC_APP_URL` - Your production URL
+     - Example: `https://your-project.vercel.app` or your custom domain
+   
+   **Optional:**
+   - `SMS_PROVIDER_API_KEY` - For real SMS integration (if not using mock)
+   - `SUPABASE_SERVICE_ROLE_KEY` - Only if you need server-side operations (keep secret!)
+
+4. **Deploy**
+   - Vercel will automatically deploy after you add environment variables
+   - Or click "Deploy" button
+   - Wait for deployment to complete
+
+5. **Verify Deployment**
+   - Visit your Vercel URL
+   - Test login functionality
+   - Verify QR codes work with production URL
 
 ### Environment Variables for Production
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SMS_PROVIDER_API_KEY=your_sms_api_key  # Optional
+# Required
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
+
+# Optional
+SMS_PROVIDER_API_KEY=your_sms_api_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key  # Keep secret!
 ```
+
+### Important Notes
+
+- **NEXT_PUBLIC_APP_URL**: This is critical for QR codes to work. Set it to your Vercel deployment URL or custom domain.
+- **Environment Variables**: Make sure to add variables for all environments (Production, Preview, Development) if needed.
+- **Redeploy**: After adding/changing environment variables, you may need to redeploy for changes to take effect.
 
 ## Development Notes
 
