@@ -394,7 +394,9 @@ function VisitSessionModal({
     if (!error && data) {
       setToken(tokenValue)
       setExpiresAt(expiresAtDate)
-      const checkinUrl = `${getAppUrl()}/checkin?token=${tokenValue}`
+      const baseUrl = getAppUrl()
+      const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}`
+      console.log('QR Code URL:', checkinUrl) // Debug: QR kod URL'sini kontrol et
       setQrUrl(checkinUrl)
     }
   }

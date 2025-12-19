@@ -513,7 +513,10 @@ function QuickVisitModal({
       if (!error && data) {
         setQrToken(tokenValue)
         setExpiresAt(expiresAtDate)
-        setQrUrl(`${getAppUrl()}/checkin?token=${tokenValue}`)
+        const baseUrl = getAppUrl()
+        const fullUrl = `${baseUrl}/checkin?token=${tokenValue}`
+        console.log('QR Code URL:', fullUrl) // Debug: QR kod URL'sini kontrol et
+        setQrUrl(fullUrl)
       }
     }
 
