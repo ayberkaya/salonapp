@@ -64,6 +64,15 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check if customer data exists
+    if (!tokenData.customers) {
+      console.error('Customer not found for token:', token)
+      return NextResponse.json(
+        { error: 'Customer not found' },
+        { status: 404 }
+      )
+    }
+
     const customer = tokenData.customers as { id: string; phone: string; full_name: string }
 
     // Check if customer already visited today (optional: prevent duplicate visits)
@@ -94,9 +103,15 @@ export async function POST(request: Request) {
       })
 
     if (visitError) {
-      console.error('Visit creation error:', visitError)
+      console.error('Visit creation error:', {
+        error: visitError,
+        code: visitError.code,
+        message: visitError.message,
+        details: visitError.details,
+        hint: visitError.hint
+      })
       return NextResponse.json(
-        { error: 'Failed to record visit' },
+        { error: 'Failed to record visit', details: visitError.message },
         { status: 500 }
       )
     }
@@ -122,8 +137,9 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Checkin API error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: errorMessage },
       { status: 500 }
     )
   }

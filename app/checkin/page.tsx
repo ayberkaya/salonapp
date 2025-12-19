@@ -29,16 +29,31 @@ function CheckInContent() {
           body: JSON.stringify({ token }),
         })
 
-        const data = await response.json()
+        let data
+        try {
+          data = await response.json()
+        } catch (jsonError) {
+          console.error('Failed to parse response:', jsonError)
+          setError('Sunucu yanıtı işlenemedi. Lütfen tekrar deneyin.')
+          setStep('error')
+          return
+        }
 
         if (!response.ok) {
-          setError(data.error || 'Failed to confirm visit')
+          console.error('Checkin API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: data?.error,
+            data
+          })
+          setError(data?.error || 'Failed to confirm visit')
           setStep('error')
           return
         }
 
         setStep('success')
       } catch (err) {
+        console.error('Checkin request error:', err)
         setError('Network error. Please try again.')
         setStep('error')
       }
@@ -87,11 +102,15 @@ function CheckInContent() {
       'Token has expired': 'QR kodun süresi dolmuş. Lütfen yeni bir QR kod oluşturun.',
       'Token has already been used': 'Bu QR kod zaten kullanılmış.',
       'Invalid or expired token': 'Geçersiz veya süresi dolmuş QR kod.',
+      'Invalid token': 'Geçersiz QR kod. Lütfen yeni bir QR kod oluşturun.',
       'You have already checked in today': 'Bugün zaten ziyaret kaydınız var.',
       'Missing visit token': 'QR kod bulunamadı.',
+      'Failed to record visit': 'Ziyaret kaydedilemedi. Lütfen tekrar deneyin.',
+      'Internal server error': 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.',
+      'Network error. Please try again.': 'Ağ hatası. Lütfen internet bağlantınızı kontrol edin.',
     }
 
-    const errorTitle = errorMessages[error || ''] || 'Bir hata oluştu'
+    const errorTitle = errorMessages[error || ''] || (error || 'Bir hata oluştu')
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-red-50 px-4">
