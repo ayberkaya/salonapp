@@ -77,13 +77,11 @@ CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
--- Users can view profiles in their salon
+-- Users can view profiles in their salon (using SECURITY DEFINER function to avoid recursion)
 CREATE POLICY "Users can view profiles in their salon"
   ON profiles FOR SELECT
   USING (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
   );
 
 -- Salons policies
@@ -91,9 +89,7 @@ CREATE POLICY "Users can view profiles in their salon"
 CREATE POLICY "Users can view their salon"
   ON salons FOR SELECT
   USING (
-    id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    id = get_user_salon_id()
   );
 
 -- Customers policies
@@ -101,27 +97,21 @@ CREATE POLICY "Users can view their salon"
 CREATE POLICY "Users can view customers in their salon"
   ON customers FOR SELECT
   USING (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
   );
 
 -- Staff and owners can insert customers
 CREATE POLICY "Staff and owners can create customers"
   ON customers FOR INSERT
   WITH CHECK (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
   );
 
 -- Staff and owners can update customers
 CREATE POLICY "Staff and owners can update customers"
   ON customers FOR UPDATE
   USING (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
   );
 
 -- Visits policies
@@ -129,18 +119,14 @@ CREATE POLICY "Staff and owners can update customers"
 CREATE POLICY "Users can view visits in their salon"
   ON visits FOR SELECT
   USING (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
   );
 
 -- Staff and owners can create visits
 CREATE POLICY "Staff and owners can create visits"
   ON visits FOR INSERT
   WITH CHECK (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
     AND created_by = auth.uid()
   );
 
@@ -149,18 +135,14 @@ CREATE POLICY "Staff and owners can create visits"
 CREATE POLICY "Users can view visit tokens in their salon"
   ON visit_tokens FOR SELECT
   USING (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
   );
 
 -- Staff and owners can create visit tokens
 CREATE POLICY "Staff and owners can create visit tokens"
   ON visit_tokens FOR INSERT
   WITH CHECK (
-    salon_id IN (
-      SELECT salon_id FROM profiles WHERE id = auth.uid()
-    )
+    salon_id = get_user_salon_id()
     AND created_by = auth.uid()
   );
 
@@ -171,7 +153,7 @@ CREATE POLICY "Visit tokens can be updated for check-in"
   USING (true)
   WITH CHECK (true);
 
--- Function to get user's salon_id
+-- Function to get user's salon_id (SECURITY DEFINER breaks recursion)
 CREATE OR REPLACE FUNCTION get_user_salon_id()
 RETURNS UUID AS $$
   SELECT salon_id FROM profiles WHERE id = auth.uid();

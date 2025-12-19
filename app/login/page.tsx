@@ -16,18 +16,54 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
+      if (error) {
+        let errorMessage = error.message
+        if (error.message.includes('Invalid login credentials') || error.message.includes('Invalid credentials')) {
+          errorMessage = 'Geçersiz email veya şifre. Lütfen kontrol edin veya Supabase Dashboard\'da kullanıcının oluşturulduğundan emin olun.'
+        }
+        setError(`Giriş hatası: ${errorMessage}`)
+        setLoading(false)
+        return
+      }
+
+      if (!data.user) {
+        setError('Kullanıcı bulunamadı')
+        setLoading(false)
+        return
+      }
+
+      // Check if profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError || !profile) {
+        setError(
+          'Profile bulunamadı! Lütfen Supabase Dashboard\'da profile oluşturun. Detaylar için /debug sayfasına bakın.'
+        )
+        setLoading(false)
+        // Still redirect to debug page to help user
+        setTimeout(() => {
+          router.push('/debug')
+        }, 2000)
+        return
+      }
+
+      // Success - redirect to dashboard
       router.push('/dashboard')
       router.refresh()
+    } catch (err: any) {
+      setError(`Beklenmeyen hata: ${err.message}`)
+      setLoading(false)
     }
   }
 

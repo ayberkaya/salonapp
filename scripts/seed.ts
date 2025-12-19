@@ -9,19 +9,48 @@
  * Usage:
  * npx tsx scripts/seed.ts
  * 
- * Note: You'll need to set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
- * in your environment for this script to work.
+ * Note: You'll need to set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+ * in your .env.local file for this script to work.
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+// Load .env.local file
+try {
+  const envFile = readFileSync(join(process.cwd(), '.env.local'), 'utf-8')
+  envFile.split('\n').forEach(line => {
+    const trimmed = line.trim()
+    // Skip comments and empty lines
+    if (trimmed.startsWith('#') || !trimmed) return
+    
+    const [key, ...valueParts] = trimmed.split('=')
+    if (key && valueParts.length > 0) {
+      const value = valueParts.join('=').trim()
+      if (!process.env[key.trim()]) {
+        process.env[key.trim()] = value
+      }
+    }
+  })
+} catch (error) {
+  console.warn('Could not load .env.local, using environment variables')
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  console.error('❌ Missing environment variables!')
+  console.error('   NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓' : '✗')
+  console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓' : '✗')
+  console.error('\n   Make sure .env.local exists and contains both variables.')
   process.exit(1)
 }
+
+console.log('✓ Environment variables loaded')
+console.log('  URL:', supabaseUrl)
+console.log('  Service Key:', supabaseServiceKey.substring(0, 20) + '...')
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
@@ -41,7 +70,21 @@ async function seed() {
     .single()
 
   if (salonError) {
-    console.error('Error creating salon:', salonError)
+    if (salonError.code === 'PGRST116' || salonError.message.includes('relation') || salonError.message.includes('does not exist')) {
+      console.error('❌ Database schema not found!')
+      console.error('\n   Please run the schema.sql file first:')
+      console.error('   1. Go to Supabase Dashboard > SQL Editor')
+      console.error('   2. Copy and paste the contents of supabase/schema.sql')
+      console.error('   3. Click "Run"')
+      console.error('   4. Then run this seed script again\n')
+    } else if (salonError.message.includes('Invalid API key')) {
+      console.error('❌ Invalid API key!')
+      console.error('   Please check your SUPABASE_SERVICE_ROLE_KEY in .env.local')
+      console.error('   Get it from: Supabase Dashboard > Settings > API > service_role key\n')
+    } else {
+      console.error('❌ Error creating salon:', salonError.message)
+      console.error('   Full error:', salonError)
+    }
     return
   }
 
