@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -12,7 +12,18 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    // Use service role client to bypass RLS for token lookup
+    // Customer is not authenticated, so we need to bypass RLS
+    let supabase
+    try {
+      supabase = createServiceRoleClient()
+    } catch (error) {
+      console.error('Service role client creation error:', error)
+      return NextResponse.json(
+        { error: 'Server configuration error. Please contact support.' },
+        { status: 500 }
+      )
+    }
 
     // Verify token is valid and not expired
     const { data: tokenData, error: tokenError } = await supabase
@@ -22,7 +33,14 @@ export async function POST(request: Request) {
       .single()
 
     if (tokenError) {
-      console.error('Token lookup error:', tokenError)
+      console.error('Token lookup error:', {
+        error: tokenError,
+        code: tokenError.code,
+        message: tokenError.message,
+        details: tokenError.details,
+        hint: tokenError.hint,
+        token: token.substring(0, 8) + '...'
+      })
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 404 }
