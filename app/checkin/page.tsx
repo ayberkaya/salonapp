@@ -1,27 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { smsProvider } from '@/lib/sms'
 
-export default function CheckInPage() {
+function CheckInContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const token = searchParams.get('token')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
-  const [step, setStep] = useState<'phone' | 'otp' | 'confirming' | 'success' | 'error'>('phone')
-  const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<'phone' | 'otp' | 'confirming' | 'success' | 'error'>(() => {
+    return token ? 'phone' : 'error'
+  })
+  const [error, setError] = useState<string | null>(() => {
+    return token ? null : 'Missing visit token'
+  })
   const [otpCode, setOtpCode] = useState<string | null>(null)
   const supabase = createClient()
-
-  useEffect(() => {
-    if (!token) {
-      setError('Missing visit token')
-      setStep('error')
-    }
-  }, [token])
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +64,7 @@ export default function CheckInPage() {
       return
     }
 
-    const customer = tokenData.customers as any
+    const customer = tokenData.customers as { id: string; phone: string; full_name: string }
     if (customer.phone !== phone) {
       setError('Phone number does not match customer')
       return
@@ -115,7 +111,7 @@ export default function CheckInPage() {
       return
     }
 
-    const customer = tokenData.customers as any
+    const customer = tokenData.customers as { id: string; phone: string; full_name: string }
 
     // Check if phone matches (if we have phone from OTP)
     if (phone && customer.phone !== phone) {
@@ -301,6 +297,20 @@ export default function CheckInPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function CheckInPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    }>
+      <CheckInContent />
+    </Suspense>
   )
 }
 

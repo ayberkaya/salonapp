@@ -7,7 +7,7 @@ import { Database } from '@/types/database'
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
 
-export default function CustomerSearch({ profile }: { profile: Profile }) {
+export default function CustomerSearch({ profile, showCreateButton = true }: { profile: Profile; showCreateButton?: boolean }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
@@ -38,13 +38,22 @@ export default function CustomerSearch({ profile }: { profile: Profile }) {
     setLoading(false)
   }
 
-  const handleCreateCustomer = async (name: string, phone: string) => {
+  const handleCreateCustomer = async (
+    name: string,
+    phone: string,
+    province?: string,
+    district?: string,
+    dateOfBirth?: string
+  ) => {
     const { data, error } = await supabase
       .from('customers')
       .insert({
         salon_id: profile.salon_id,
         full_name: name,
         phone: phone,
+        province: province || null,
+        district: district || null,
+        date_of_birth: dateOfBirth || null,
         kvkk_consent_at: new Date().toISOString(),
       })
       .select()
@@ -58,28 +67,58 @@ export default function CustomerSearch({ profile }: { profile: Profile }) {
     }
   }
 
+  // Load all customers on mount for owner
+  useEffect(() => {
+    if (profile.role === 'OWNER' && searchQuery.length === 0) {
+      loadAllCustomers()
+    }
+  }, [profile.role])
+
+  const loadAllCustomers = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('salon_id', profile.salon_id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (!error && data) {
+      setCustomers(data)
+    }
+    setLoading(false)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex gap-4">
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search by phone or name..."
+            placeholder="Telefon veya isim ile ara..."
             className="w-full rounded-lg border border-gray-300 px-4 py-3 text-lg focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoFocus
           />
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="rounded-lg bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          New Customer
-        </button>
+        {showCreateButton && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-lg bg-blue-600 px-6 py-3 text-lg font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            + Yeni Müşteri
+          </button>
+        )}
       </div>
 
-      {loading && <p className="text-gray-600">Searching...</p>}
+      {loading && <p className="text-gray-600">Aranıyor...</p>}
+
+      {!loading && searchQuery.length === 0 && customers.length === 0 && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+          <p className="text-gray-600">Henüz müşteri yok. İlk müşteriyi eklemek için "Yeni Müşteri" butonuna tıklayın.</p>
+        </div>
+      )}
 
       {customers.length > 0 && (
         <div className="space-y-2">
@@ -101,7 +140,7 @@ export default function CustomerSearch({ profile }: { profile: Profile }) {
                 onClick={() => setSelectedCustomer(customer)}
                 className="rounded-lg bg-green-600 px-6 py-2 text-lg font-medium text-white hover:bg-green-700"
               >
-                Start Visit
+                Ziyaret Başlat
               </button>
             </div>
           ))}
@@ -131,26 +170,29 @@ function CreateCustomerModal({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (name: string, phone: string) => void
+  onCreate: (name: string, phone: string, province?: string, district?: string, dateOfBirth?: string) => void
 }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [province, setProvince] = useState('')
+  const [district, setDistrict] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [consent, setConsent] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (name && phone && consent) {
-      onCreate(name, phone)
+      onCreate(name, phone, province || undefined, district || undefined, dateOfBirth || undefined)
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md rounded-lg bg-white p-6">
-        <h2 className="mb-4 text-xl font-bold">Create New Customer</h2>
+        <h2 className="mb-4 text-xl font-bold">Yeni Müşteri Ekle</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
             <input
               type="text"
               required
@@ -161,13 +203,42 @@ function CreateCustomerModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
+            <label className="block text-sm font-medium text-gray-700">Telefon</label>
             <input
               type="tel"
               required
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">İl</label>
+            <input
+              type="text"
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+              placeholder="İl"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">İlçe</label>
+            <input
+              type="text"
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              placeholder="İlçe"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Doğum Tarihi</label>
+            <input
+              type="date"
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
             />
           </div>
           <div className="flex items-center">
@@ -195,7 +266,7 @@ function CreateCustomerModal({
               type="submit"
               className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
-              Create
+              Oluştur
             </button>
           </div>
         </form>
@@ -254,7 +325,7 @@ function VisitSessionModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-2xl rounded-lg bg-white p-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Visit Session</h2>
+          <h2 className="text-2xl font-bold">Ziyaret Oturumu</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -279,7 +350,7 @@ function VisitSessionModal({
               Time remaining: {timeRemaining}s
             </p>
             <p className="text-sm text-gray-600">
-              Customer should scan this QR code to confirm visit
+              Müşteri bu QR kodu tarayarak ziyareti onaylamalı
             </p>
           </div>
         )}
@@ -288,7 +359,7 @@ function VisitSessionModal({
             onClick={generateVisitToken}
             className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-3 text-lg font-medium text-white hover:bg-blue-700"
           >
-            Generate New QR Code
+            Yeni QR Kod Oluştur
           </button>
         )}
       </div>
