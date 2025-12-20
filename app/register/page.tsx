@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/lib/toast-context'
@@ -25,8 +25,34 @@ export default function RegisterPage() {
   const [consent, setConsent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [salonValid, setSalonValid] = useState<boolean | null>(null)
 
   const supabase = createClient()
+
+  // Validate salon_id on mount
+  useEffect(() => {
+    const validateSalon = async () => {
+      if (!salonId) {
+        setSalonValid(false)
+        return
+      }
+
+      // Check if salon exists
+      const { data, error } = await supabase
+        .from('salons')
+        .select('id')
+        .eq('id', salonId)
+        .single()
+
+      if (error || !data) {
+        setSalonValid(false)
+      } else {
+        setSalonValid(true)
+      }
+    }
+
+    validateSalon()
+  }, [salonId, supabase])
 
   // İl değiştiğinde ilçe listesini sıfırla
   const handleProvinceChange = (selectedProvince: string) => {
@@ -108,12 +134,29 @@ export default function RegisterPage() {
     }
   }
 
-  if (!salonId) {
+  if (!salonId || salonValid === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
         <Card className="w-full max-w-md p-8 text-center">
           <h1 className="mb-4 text-2xl font-bold text-gray-900">Geçersiz QR Kod</h1>
-          <p className="text-gray-600">Lütfen geçerli bir QR kod okutun.</p>
+          <p className="text-gray-600">
+            {salonValid === false 
+              ? 'Bu QR kod geçersiz veya salon bulunamadı. Lütfen geçerli bir QR kod okutun.'
+              : 'Lütfen geçerli bir QR kod okutun.'}
+          </p>
+        </Card>
+      </div>
+    )
+  }
+
+  if (salonValid === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <Card className="w-full max-w-md p-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+          </div>
+          <p className="text-gray-600">Yükleniyor...</p>
         </Card>
       </div>
     )
@@ -145,7 +188,7 @@ export default function RegisterPage() {
       <div className="mx-auto max-w-2xl">
         <Card className="p-6 sm:p-8">
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Müşteri Kaydı</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Hoşgeldiniz!</h1>
             <p className="mt-2 text-gray-600">
               Bilgilerinizi doldurarak kayıt olun ve %15 hoş geldin indirimi kazanın
             </p>
@@ -246,7 +289,7 @@ export default function RegisterPage() {
                 <select
                   value={birthDay}
                   onChange={(e) => setBirthDay(e.target.value ? Number(e.target.value) : '')}
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Gün</option>
                   {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (

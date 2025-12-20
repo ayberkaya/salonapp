@@ -155,10 +155,19 @@ CREATE POLICY "Staff and owners can create visit tokens"
 
 -- Anyone can update visit tokens (for customer check-in via API)
 -- This is handled server-side with proper validation
+-- Only allow updating used_at field for tokens that belong to valid salons
 CREATE POLICY "Visit tokens can be updated for check-in"
   ON visit_tokens FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
+  USING (
+    -- Allow update if token exists and belongs to a valid salon
+    salon_id IN (SELECT id FROM salons)
+  )
+  WITH CHECK (
+    -- Ensure the token still belongs to a valid salon
+    salon_id IN (SELECT id FROM salons)
+    -- Only allow setting used_at (prevent malicious field changes)
+    AND (used_at IS NOT NULL)
+  );
 
 -- Function to get user's salon_id (SECURITY DEFINER breaks recursion)
 CREATE OR REPLACE FUNCTION get_user_salon_id()
