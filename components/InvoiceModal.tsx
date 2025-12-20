@@ -672,13 +672,13 @@ export default function InvoiceModal({
         )}
 
         {/* Discount Section */}
-        <div className="space-y-3 pt-4 border-t-2 border-gray-200">
-          <label className="block text-sm font-semibold text-gray-900">İndirim</label>
-          <div className="flex gap-3">
+        <div className="space-y-2 pt-3 border-t-2 border-gray-200">
+          <label className="block text-xs font-semibold text-gray-900">İndirim</label>
+          <div className="flex gap-2">
             <select
               value={discountType}
               onChange={(e) => setDiscountType(e.target.value as any)}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="none">İndirim Yok</option>
               <option value="percentage">İndirim Yüzdesi</option>
@@ -693,12 +693,12 @@ export default function InvoiceModal({
                   onChange={(e) =>
                     setDiscountPercentage(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))
                   }
-                  className="w-24"
+                  className="w-24 text-sm"
                   placeholder="%"
                   min="0"
                   max="100"
                 />
-                <span className="text-sm text-gray-600">İndirim: {discountAmount.toFixed(2)} ₺</span>
+                <span className="text-xs text-gray-600">İndirim: {discountAmount.toFixed(2)} ₺</span>
               </div>
             )}
             
@@ -707,7 +707,7 @@ export default function InvoiceModal({
                 type="text"
                 value={discountCode}
                 onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                className="flex-1"
+                className="flex-1 text-sm"
                 placeholder="İndirim kodu girin"
               />
             )}
