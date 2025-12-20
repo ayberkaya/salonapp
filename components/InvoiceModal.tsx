@@ -737,7 +737,7 @@ export default function InvoiceModal({
           <Button
             variant="ghost"
             onClick={handleClose}
-            className="flex-1"
+            className="flex-1 h-9 text-sm"
             disabled={saving}
           >
             İptal
@@ -745,7 +745,7 @@ export default function InvoiceModal({
           <Button
             onClick={handleSave}
             disabled={saving || !selectedCustomer || invoiceServices.length === 0}
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            className="flex-1 bg-green-600 hover:bg-green-700 h-9 text-sm"
           >
             {saving ? 'Kaydediliyor...' : 'Adisyonu Kaydet'}
           </Button>
