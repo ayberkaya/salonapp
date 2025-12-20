@@ -7,8 +7,10 @@ import { useRouter } from 'next/navigation'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import { X, Plus, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, Plus, Trash2, Search } from 'lucide-react'
 import Card from '@/components/ui/Card'
+import ServiceSelectDropdown from '@/components/ServiceSelectDropdown'
+import ServiceSelectDropdown from '@/components/ServiceSelectDropdown'
 
 type Customer = {
   id: string
@@ -522,46 +524,25 @@ export default function InvoiceModal({
                 {/* Services Dropdown */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Hizmetler</label>
-                  <div className="relative">
-                    <select
-                      multiple
-                      value={row.service_ids}
-                      onChange={(e) => {
-                        const selected = Array.from(e.target.selectedOptions, option => option.value)
-                        // Toggle services
-                        row.service_ids.forEach(id => {
-                          if (!selected.includes(id)) {
-                            handleServiceToggle(row.id, id, false)
-                          }
-                        })
-                        selected.forEach(id => {
-                          if (!row.service_ids.includes(id)) {
-                            handleServiceToggle(row.id, id, true)
-                          }
-                        })
-                      }}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      size={Math.min(services.length, 5)}
-                    >
-                      {services.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.name} - {service.default_price.toFixed(2)} ₺
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {row.services.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {row.services.map((service) => (
-                        <span
-                          key={service.id}
-                          className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800"
-                        >
-                          {service.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <ServiceSelectDropdown
+                    services={services}
+                    selectedServiceIds={row.service_ids}
+                    onSelectionChange={(serviceIds) => {
+                      // Remove services that are no longer selected
+                      row.service_ids.forEach(id => {
+                        if (!serviceIds.includes(id)) {
+                          handleServiceToggle(row.id, id, false)
+                        }
+                      })
+                      // Add newly selected services
+                      serviceIds.forEach(id => {
+                        if (!row.service_ids.includes(id)) {
+                          handleServiceToggle(row.id, id, true)
+                        }
+                      })
+                    }}
+                    placeholder="Hizmet seçin"
+                  />
                 </div>
               </div>
               {serviceRows.length > 1 && (
