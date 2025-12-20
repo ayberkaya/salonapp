@@ -14,7 +14,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Input from '@/components/ui/Input'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
 import { getAppUrl } from '@/lib/utils'
-import { getLoyaltyLevel, LOYALTY_LEVELS, getNextLevel } from '@/lib/loyalty'
+import { getLoyaltyLevel, LOYALTY_LEVELS, getNextLevel, getLoyaltyLevelInfo } from '@/lib/loyalty'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -71,6 +71,49 @@ export default function CustomerDetail({
   const [isEditing, setIsEditing] = useState(false)
   const [editedCustomer, setEditedCustomer] = useState<Partial<Customer>>(customer)
   const [isSaving, setIsSaving] = useState(false)
+  const [salonDiscounts, setSalonDiscounts] = useState<{
+    loyalty_bronze_discount?: number | null
+    loyalty_silver_discount?: number | null
+    loyalty_gold_discount?: number | null
+    loyalty_platinum_discount?: number | null
+    loyalty_vip_discount?: number | null
+  } | null>(null)
+  const [salonThresholds, setSalonThresholds] = useState<{
+    loyalty_silver_min_visits?: number | null
+    loyalty_gold_min_visits?: number | null
+    loyalty_platinum_min_visits?: number | null
+    loyalty_vip_min_visits?: number | null
+  } | null>(null)
+
+  // Load salon discounts and thresholds
+  useEffect(() => {
+    const loadSalonSettings = async () => {
+      const { data, error } = await supabase
+        .from('salons')
+        .select('loyalty_bronze_discount, loyalty_silver_discount, loyalty_gold_discount, loyalty_platinum_discount, loyalty_vip_discount, loyalty_silver_min_visits, loyalty_gold_min_visits, loyalty_platinum_min_visits, loyalty_vip_min_visits')
+        .eq('id', profile.salon_id)
+        .single()
+      
+      if (!error && data) {
+        setSalonDiscounts({
+          loyalty_bronze_discount: data.loyalty_bronze_discount,
+          loyalty_silver_discount: data.loyalty_silver_discount,
+          loyalty_gold_discount: data.loyalty_gold_discount,
+          loyalty_platinum_discount: data.loyalty_platinum_discount,
+          loyalty_vip_discount: data.loyalty_vip_discount,
+        })
+        setSalonThresholds({
+          loyalty_silver_min_visits: data.loyalty_silver_min_visits,
+          loyalty_gold_min_visits: data.loyalty_gold_min_visits,
+          loyalty_platinum_min_visits: data.loyalty_platinum_min_visits,
+          loyalty_vip_min_visits: data.loyalty_vip_min_visits,
+        })
+      }
+    }
+    
+    loadSalonSettings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.salon_id])
 
   // Available services
   const availableServices = [
@@ -531,10 +574,10 @@ export default function CustomerDetail({
 
       {/* Loyalty Level Card */}
       {(() => {
-        const currentLevel = getLoyaltyLevel(visitCount)
-        const levelInfo = LOYALTY_LEVELS[currentLevel]
+        const currentLevel = getLoyaltyLevel(visitCount, salonThresholds || undefined)
+        const levelInfo = getLoyaltyLevelInfo(currentLevel, salonDiscounts || undefined, salonThresholds || undefined)
         const nextLevel = getNextLevel(currentLevel)
-        const nextLevelInfo = nextLevel ? LOYALTY_LEVELS[nextLevel] : null
+        const nextLevelInfo = nextLevel ? getLoyaltyLevelInfo(nextLevel, salonDiscounts || undefined, salonThresholds || undefined) : null
         const progress = nextLevelInfo 
           ? Math.min(100, (visitCount / nextLevelInfo.minVisits) * 100)
           : 100

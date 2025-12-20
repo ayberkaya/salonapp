@@ -6,7 +6,7 @@ import { useToast } from '@/lib/toast-context'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import { Save, Lock, Building2, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { Save, Lock, Building2, Clock, Calendar, ChevronDown, ChevronUp, Award } from 'lucide-react'
 
 type Salon = {
   id: string
@@ -14,6 +14,15 @@ type Salon = {
   working_days: string[] | null
   opening_time: string | null
   closing_time: string | null
+  loyalty_bronze_discount: number | null
+  loyalty_silver_discount: number | null
+  loyalty_gold_discount: number | null
+  loyalty_platinum_discount: number | null
+  loyalty_vip_discount: number | null
+  loyalty_silver_min_visits: number | null
+  loyalty_gold_min_visits: number | null
+  loyalty_platinum_min_visits: number | null
+  loyalty_vip_min_visits: number | null
 }
 
 interface SalonSettingsProps {
@@ -40,6 +49,15 @@ export default function SalonSettings({ salonId, initialSalon }: SalonSettingsPr
   const [workingDays, setWorkingDays] = useState<string[]>([])
   const [openingTime, setOpeningTime] = useState('')
   const [closingTime, setClosingTime] = useState('')
+  const [loyaltyBronzeDiscount, setLoyaltyBronzeDiscount] = useState(10)
+  const [loyaltySilverDiscount, setLoyaltySilverDiscount] = useState(15)
+  const [loyaltyGoldDiscount, setLoyaltyGoldDiscount] = useState(20)
+  const [loyaltyPlatinumDiscount, setLoyaltyPlatinumDiscount] = useState(25)
+  const [loyaltyVipDiscount, setLoyaltyVipDiscount] = useState(30)
+  const [loyaltySilverMinVisits, setLoyaltySilverMinVisits] = useState(10)
+  const [loyaltyGoldMinVisits, setLoyaltyGoldMinVisits] = useState(20)
+  const [loyaltyPlatinumMinVisits, setLoyaltyPlatinumMinVisits] = useState(30)
+  const [loyaltyVipMinVisits, setLoyaltyVipMinVisits] = useState(40)
   const [savingSalon, setSavingSalon] = useState(false)
 
   // Password change
@@ -49,6 +67,7 @@ export default function SalonSettings({ salonId, initialSalon }: SalonSettingsPr
   const [changingPassword, setChangingPassword] = useState(false)
   const [showPasswordSection, setShowPasswordSection] = useState(false)
   const [showSalonSection, setShowSalonSection] = useState(false)
+  const [showLoyaltySection, setShowLoyaltySection] = useState(false)
 
   useEffect(() => {
     if (salon) {
@@ -56,6 +75,15 @@ export default function SalonSettings({ salonId, initialSalon }: SalonSettingsPr
       setWorkingDays(salon.working_days || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
       setOpeningTime(salon.opening_time || '09:00')
       setClosingTime(salon.closing_time || '18:00')
+      setLoyaltyBronzeDiscount(salon.loyalty_bronze_discount ?? 10)
+      setLoyaltySilverDiscount(salon.loyalty_silver_discount ?? 15)
+      setLoyaltyGoldDiscount(salon.loyalty_gold_discount ?? 20)
+      setLoyaltyPlatinumDiscount(salon.loyalty_platinum_discount ?? 25)
+      setLoyaltyVipDiscount(salon.loyalty_vip_discount ?? 30)
+      setLoyaltySilverMinVisits(salon.loyalty_silver_min_visits ?? 10)
+      setLoyaltyGoldMinVisits(salon.loyalty_gold_min_visits ?? 20)
+      setLoyaltyPlatinumMinVisits(salon.loyalty_platinum_min_visits ?? 30)
+      setLoyaltyVipMinVisits(salon.loyalty_vip_min_visits ?? 40)
     }
   }, [salon])
 
@@ -102,6 +130,15 @@ export default function SalonSettings({ salonId, initialSalon }: SalonSettingsPr
           working_days: workingDays,
           opening_time: openingTime || null,
           closing_time: closingTime || null,
+          loyalty_bronze_discount: loyaltyBronzeDiscount,
+          loyalty_silver_discount: loyaltySilverDiscount,
+          loyalty_gold_discount: loyaltyGoldDiscount,
+          loyalty_platinum_discount: loyaltyPlatinumDiscount,
+          loyalty_vip_discount: loyaltyVipDiscount,
+          loyalty_silver_min_visits: loyaltySilverMinVisits,
+          loyalty_gold_min_visits: loyaltyGoldMinVisits,
+          loyalty_platinum_min_visits: loyaltyPlatinumMinVisits,
+          loyalty_vip_min_visits: loyaltyVipMinVisits,
         })
         .eq('id', salonId)
         .select()
@@ -367,6 +404,211 @@ export default function SalonSettings({ salonId, initialSalon }: SalonSettingsPr
             <Save className="mr-2 h-4 w-4" />
             {savingSalon ? 'Kaydediliyor...' : 'Kaydet'}
           </Button>
+          </div>
+        )}
+      </Card>
+
+      {/* Loyalty Discount Settings */}
+      <Card className="p-3">
+        <button
+          onClick={() => setShowLoyaltySection(!showLoyaltySection)}
+          className="w-full flex items-center justify-between h-10"
+        >
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-gray-600" />
+            <h2 className="text-base font-semibold text-gray-900">Sadakat Seviyesi İndirimleri</h2>
+          </div>
+          {showLoyaltySection ? (
+            <ChevronUp className="h-4 w-4 text-gray-600" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-gray-600" />
+          )}
+        </button>
+        {showLoyaltySection && (
+          <div className="space-y-4 mt-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Her sadakat seviyesi için indirim oranını ve minimum ziyaret sayısını belirleyin
+            </p>
+            
+            <div className="space-y-6">
+              {/* Bronze Level */}
+              <div className="border-b border-gray-200 pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">🥉</span> Bronz Seviyesi
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İndirim Oranı (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={loyaltyBronzeDiscount}
+                      onChange={(e) => setLoyaltyBronzeDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Ziyaret (Her zaman 0)
+                    </label>
+                    <Input
+                      type="number"
+                      value={0}
+                      disabled
+                      className="bg-gray-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Silver Level */}
+              <div className="border-b border-gray-200 pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">🥈</span> Gümüş Seviyesi
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İndirim Oranı (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={loyaltySilverDiscount}
+                      onChange={(e) => setLoyaltySilverDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Ziyaret Sayısı
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={loyaltySilverMinVisits}
+                      onChange={(e) => setLoyaltySilverMinVisits(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Gold Level */}
+              <div className="border-b border-gray-200 pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">🥇</span> Altın Seviyesi
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İndirim Oranı (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={loyaltyGoldDiscount}
+                      onChange={(e) => setLoyaltyGoldDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Ziyaret Sayısı
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={loyaltyGoldMinVisits}
+                      onChange={(e) => setLoyaltyGoldMinVisits(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Platinum Level */}
+              <div className="border-b border-gray-200 pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">💎</span> Platin Seviyesi
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İndirim Oranı (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={loyaltyPlatinumDiscount}
+                      onChange={(e) => setLoyaltyPlatinumDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Ziyaret Sayısı
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={loyaltyPlatinumMinVisits}
+                      onChange={(e) => setLoyaltyPlatinumMinVisits(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* VIP Level */}
+              <div className="pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-xl">👑</span> VIP Seviyesi
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      İndirim Oranı (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={loyaltyVipDiscount}
+                      onChange={(e) => setLoyaltyVipDiscount(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Minimum Ziyaret Sayısı
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={loyaltyVipMinVisits}
+                      onChange={(e) => setLoyaltyVipMinVisits(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={savingSalon}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSaveSalonSettings}
+              disabled={savingSalon}
+              className="w-full sm:w-auto"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {savingSalon ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
           </div>
         )}
       </Card>

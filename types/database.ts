@@ -8,6 +8,15 @@ export type Database = {
           working_days: string[] | null
           opening_time: string | null
           closing_time: string | null
+          loyalty_bronze_discount: number | null
+          loyalty_silver_discount: number | null
+          loyalty_gold_discount: number | null
+          loyalty_platinum_discount: number | null
+          loyalty_vip_discount: number | null
+          loyalty_silver_min_visits: number | null
+          loyalty_gold_min_visits: number | null
+          loyalty_platinum_min_visits: number | null
+          loyalty_vip_min_visits: number | null
           created_at: string
         }
         Insert: {
@@ -16,6 +25,15 @@ export type Database = {
           working_days?: string[] | null
           opening_time?: string | null
           closing_time?: string | null
+          loyalty_bronze_discount?: number | null
+          loyalty_silver_discount?: number | null
+          loyalty_gold_discount?: number | null
+          loyalty_platinum_discount?: number | null
+          loyalty_vip_discount?: number | null
+          loyalty_silver_min_visits?: number | null
+          loyalty_gold_min_visits?: number | null
+          loyalty_platinum_min_visits?: number | null
+          loyalty_vip_min_visits?: number | null
           created_at?: string
         }
         Update: {
@@ -24,6 +42,15 @@ export type Database = {
           working_days?: string[] | null
           opening_time?: string | null
           closing_time?: string | null
+          loyalty_bronze_discount?: number | null
+          loyalty_silver_discount?: number | null
+          loyalty_gold_discount?: number | null
+          loyalty_platinum_discount?: number | null
+          loyalty_vip_discount?: number | null
+          loyalty_silver_min_visits?: number | null
+          loyalty_gold_min_visits?: number | null
+          loyalty_platinum_min_visits?: number | null
+          loyalty_vip_min_visits?: number | null
           created_at?: string
         }
       }

@@ -10,6 +10,7 @@ import Input from '@/components/ui/Input'
 import { X, Plus, Trash2, Search } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import ServiceSelectDropdown from '@/components/ServiceSelectDropdown'
+import { getLoyaltyLevel, getLoyaltyLevelInfo, LOYALTY_LEVELS } from '@/lib/loyalty'
 
 type Customer = {
   id: string
@@ -98,10 +99,28 @@ export default function InvoiceModal({
     percentage: number
   } | null>(null)
 
+  // Loyalty
+  const [customerVisitCount, setCustomerVisitCount] = useState(0)
+  const [customerLoyaltyLevel, setCustomerLoyaltyLevel] = useState<string | null>(null)
+  const [salonDiscounts, setSalonDiscounts] = useState<{
+    loyalty_bronze_discount?: number | null
+    loyalty_silver_discount?: number | null
+    loyalty_gold_discount?: number | null
+    loyalty_platinum_discount?: number | null
+    loyalty_vip_discount?: number | null
+  } | null>(null)
+  const [salonThresholds, setSalonThresholds] = useState<{
+    loyalty_silver_min_visits?: number | null
+    loyalty_gold_min_visits?: number | null
+    loyalty_platinum_min_visits?: number | null
+    loyalty_vip_min_visits?: number | null
+  } | null>(null)
+
   useEffect(() => {
     if (isOpen) {
       loadServices()
       loadStaff()
+      loadSalonLoyaltySettings()
       // Initialize with one empty row
       setServiceRows([{
         id: `row-${Date.now()}`,
@@ -112,6 +131,58 @@ export default function InvoiceModal({
       }])
     }
   }, [isOpen, salonId])
+
+  // Load customer loyalty info when customer is selected
+  useEffect(() => {
+    if (selectedCustomer && salonDiscounts && salonThresholds) {
+      loadCustomerLoyaltyInfo()
+    } else {
+      setCustomerVisitCount(0)
+      setCustomerLoyaltyLevel(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCustomer?.id, salonDiscounts, salonThresholds])
+
+  const loadSalonLoyaltySettings = async () => {
+    const { data, error } = await supabase
+      .from('salons')
+      .select('loyalty_bronze_discount, loyalty_silver_discount, loyalty_gold_discount, loyalty_platinum_discount, loyalty_vip_discount, loyalty_silver_min_visits, loyalty_gold_min_visits, loyalty_platinum_min_visits, loyalty_vip_min_visits')
+      .eq('id', salonId)
+      .single()
+    
+    if (!error && data) {
+      setSalonDiscounts({
+        loyalty_bronze_discount: data.loyalty_bronze_discount,
+        loyalty_silver_discount: data.loyalty_silver_discount,
+        loyalty_gold_discount: data.loyalty_gold_discount,
+        loyalty_platinum_discount: data.loyalty_platinum_discount,
+        loyalty_vip_discount: data.loyalty_vip_discount,
+      })
+      setSalonThresholds({
+        loyalty_silver_min_visits: data.loyalty_silver_min_visits,
+        loyalty_gold_min_visits: data.loyalty_gold_min_visits,
+        loyalty_platinum_min_visits: data.loyalty_platinum_min_visits,
+        loyalty_vip_min_visits: data.loyalty_vip_min_visits,
+      })
+    }
+  }
+
+  const loadCustomerLoyaltyInfo = async () => {
+    if (!selectedCustomer) return
+
+    // Get visit count
+    const { count } = await supabase
+      .from('visits')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_id', selectedCustomer.id)
+
+    const visitCount = count || 0
+    setCustomerVisitCount(visitCount)
+
+    // Get loyalty level
+    const level = getLoyaltyLevel(visitCount, salonThresholds || undefined)
+    setCustomerLoyaltyLevel(level)
+  }
 
   useEffect(() => {
     if (customerSearch.length >= 2) {
@@ -533,16 +604,51 @@ export default function InvoiceModal({
 
   const calculateTotals = () => {
     const subtotal = invoiceServices.reduce((sum, item) => sum + item.total_price, 0)
-    let discountAmount = 0
     
-    if (discountType === 'percentage') {
-      discountAmount = subtotal * (discountPercentage / 100)
-    } else if (discountType === 'code' && appliedDiscountCode) {
-      discountAmount = subtotal * (appliedDiscountCode.percentage / 100)
+    // Step 1: Calculate loyalty discount (applied first on subtotal)
+    let loyaltyDiscountAmount = 0
+    let loyaltyDiscountPercentage = 0
+    let amountAfterLoyalty = subtotal
+    if (customerLoyaltyLevel && salonDiscounts) {
+      const levelInfo = getLoyaltyLevelInfo(
+        customerLoyaltyLevel as any,
+        salonDiscounts,
+        salonThresholds || undefined
+      )
+      loyaltyDiscountPercentage = levelInfo.discount
+      loyaltyDiscountAmount = subtotal * (loyaltyDiscountPercentage / 100)
+      amountAfterLoyalty = subtotal - loyaltyDiscountAmount
     }
-    
-    const total = subtotal - discountAmount
-    return { subtotal, discountAmount, total }
+
+    // Step 2: Calculate manual discount (applied on amount after loyalty discount)
+    let manualDiscountAmount = 0
+    let amountAfterManual = amountAfterLoyalty
+    if (discountType === 'percentage') {
+      manualDiscountAmount = amountAfterLoyalty * (discountPercentage / 100)
+      amountAfterManual = amountAfterLoyalty - manualDiscountAmount
+    }
+
+    // Step 3: Calculate code discount (applied on amount after manual discount)
+    let codeDiscountAmount = 0
+    if (discountType === 'code' && appliedDiscountCode) {
+      codeDiscountAmount = amountAfterManual * (appliedDiscountCode.percentage / 100)
+    }
+
+    // Total discount and final amount
+    const totalDiscountAmount = loyaltyDiscountAmount + manualDiscountAmount + codeDiscountAmount
+    const total = subtotal - totalDiscountAmount
+
+    return {
+      subtotal,
+      loyaltyDiscountAmount,
+      loyaltyDiscountPercentage,
+      manualDiscountAmount,
+      manualDiscountPercentage: discountType === 'percentage' ? discountPercentage : 0,
+      codeDiscountAmount,
+      codeDiscountPercentage: appliedDiscountCode?.percentage || 0,
+      totalDiscountAmount,
+      total
+    }
   }
 
   const handleSave = async () => {
@@ -560,7 +666,7 @@ export default function InvoiceModal({
 
       const invoiceNumber = invoiceNumberData || `INV-${Date.now()}`
 
-      const { subtotal, discountAmount, total } = calculateTotals()
+      const { subtotal, totalDiscountAmount, total } = calculateTotals()
 
       // Create invoice
       const { data: invoice, error: invoiceError } = await supabase
@@ -571,7 +677,7 @@ export default function InvoiceModal({
           invoice_number: invoiceNumber,
           subtotal: subtotal.toFixed(2),
           discount_percentage: discountType === 'percentage' ? discountPercentage : 0,
-          discount_amount: discountAmount.toFixed(2),
+          discount_amount: totalDiscountAmount.toFixed(2),
           total_amount: total.toFixed(2),
           created_by: profileId,
         })
@@ -653,9 +759,22 @@ export default function InvoiceModal({
 
           // Update loyalty level based on visit count
           if (newVisitCount !== null) {
-            const newLevel = newVisitCount >= 30 ? 'PLATINUM' :
-                             newVisitCount >= 20 ? 'GOLD' :
-                             newVisitCount >= 10 ? 'SILVER' : 'BRONZE'
+            // Load salon thresholds
+            const { data: salonData } = await supabase
+              .from('salons')
+              .select('loyalty_silver_min_visits, loyalty_gold_min_visits, loyalty_platinum_min_visits, loyalty_vip_min_visits')
+              .eq('id', salonId)
+              .single()
+            
+            const vipThreshold = salonData?.loyalty_vip_min_visits ?? 40
+            const platinumThreshold = salonData?.loyalty_platinum_min_visits ?? 30
+            const goldThreshold = salonData?.loyalty_gold_min_visits ?? 20
+            const silverThreshold = salonData?.loyalty_silver_min_visits ?? 10
+            
+            const newLevel = newVisitCount >= vipThreshold ? 'VIP' :
+                           newVisitCount >= platinumThreshold ? 'PLATINUM' :
+                           newVisitCount >= goldThreshold ? 'GOLD' :
+                           newVisitCount >= silverThreshold ? 'SILVER' : 'BRONZE'
             
             // Check if level changed
             const { data: currentCustomer } = await supabase
@@ -691,6 +810,8 @@ export default function InvoiceModal({
 
   const handleClose = () => {
     setSelectedCustomer(null)
+    setCustomerVisitCount(0)
+    setCustomerLoyaltyLevel(null)
     setServiceRows([{
       id: `row-${Date.now()}`,
       staff_id: null,
@@ -708,7 +829,7 @@ export default function InvoiceModal({
     onClose()
   }
 
-  const { subtotal, discountAmount, total } = calculateTotals()
+  const { subtotal, totalDiscountAmount, total } = calculateTotals()
 
   return (
     <>
@@ -815,9 +936,32 @@ export default function InvoiceModal({
           {selectedCustomer && (
             <Card className="mt-2 bg-blue-50 border-blue-200" style={{ padding: '9.6px' }}>
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="font-medium text-gray-900">{selectedCustomer.full_name}</p>
                   <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
+                  {customerLoyaltyLevel && salonDiscounts && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-lg">{LOYALTY_LEVELS[customerLoyaltyLevel as keyof typeof LOYALTY_LEVELS]?.icon}</span>
+                      <span className="text-xs font-medium text-gray-700">
+                        {LOYALTY_LEVELS[customerLoyaltyLevel as keyof typeof LOYALTY_LEVELS]?.name} Seviyesi
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({customerVisitCount} ziyaret)
+                      </span>
+                      {(() => {
+                        const levelInfo = getLoyaltyLevelInfo(
+                          customerLoyaltyLevel as any,
+                          salonDiscounts,
+                          salonThresholds || undefined
+                        )
+                        return (
+                          <span className="text-xs font-semibold text-blue-600">
+                            %{levelInfo.discount} indirim
+                          </span>
+                        )
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -1003,7 +1147,10 @@ export default function InvoiceModal({
                   min="0"
                   max="100"
                 />
-                <span className="text-xs text-gray-600">İndirim: {discountAmount.toFixed(2)} ₺</span>
+                <span className="text-xs text-gray-600">Manuel İndirim: {(() => {
+                  const { manualDiscountAmount } = calculateTotals()
+                  return manualDiscountAmount.toFixed(2)
+                })()} ₺</span>
               </div>
             )}
             
@@ -1039,12 +1186,46 @@ export default function InvoiceModal({
             <span className="text-gray-700 font-medium text-sm">Ara Toplam:</span>
             <span className="font-semibold text-gray-900 text-base">{subtotal.toFixed(2)} ₺</span>
           </div>
-          {discountAmount > 0 && (
-            <div className="flex items-center justify-between bg-red-50 p-2 rounded-lg">
-              <span className="text-gray-700 font-medium text-sm">İndirim:</span>
-              <span className="font-semibold text-red-600 text-base">-{discountAmount.toFixed(2)} ₺</span>
-            </div>
-          )}
+          
+          {(() => {
+            const { loyaltyDiscountAmount, loyaltyDiscountPercentage, manualDiscountAmount, manualDiscountPercentage, codeDiscountAmount, codeDiscountPercentage, totalDiscountAmount } = calculateTotals()
+            
+            return (
+              <>
+                {loyaltyDiscountAmount > 0 && (
+                  <div className="flex items-center justify-between bg-purple-50 p-2 rounded-lg">
+                    <span className="text-gray-700 font-medium text-sm">
+                      Sadakat İndirimi (%{loyaltyDiscountPercentage.toFixed(0)}):
+                    </span>
+                    <span className="font-semibold text-purple-600 text-base">-{loyaltyDiscountAmount.toFixed(2)} ₺</span>
+                  </div>
+                )}
+                {manualDiscountAmount > 0 && (
+                  <div className="flex items-center justify-between bg-orange-50 p-2 rounded-lg">
+                    <span className="text-gray-700 font-medium text-sm">
+                      Manuel İndirim (%{manualDiscountPercentage.toFixed(0)}):
+                    </span>
+                    <span className="font-semibold text-orange-600 text-base">-{manualDiscountAmount.toFixed(2)} ₺</span>
+                  </div>
+                )}
+                {codeDiscountAmount > 0 && (
+                  <div className="flex items-center justify-between bg-green-50 p-2 rounded-lg">
+                    <span className="text-gray-700 font-medium text-sm">
+                      İndirim Kodu (%{codeDiscountPercentage.toFixed(0)}):
+                    </span>
+                    <span className="font-semibold text-green-600 text-base">-{codeDiscountAmount.toFixed(2)} ₺</span>
+                  </div>
+                )}
+                {totalDiscountAmount > 0 && (
+                  <div className="flex items-center justify-between bg-red-50 p-2 rounded-lg">
+                    <span className="text-gray-700 font-medium text-sm">Toplam İndirim:</span>
+                    <span className="font-semibold text-red-600 text-base">-{totalDiscountAmount.toFixed(2)} ₺</span>
+                  </div>
+                )}
+              </>
+            )
+          })()}
+          
           <div className="flex items-center justify-between pt-2 border-t-2 border-gray-300 bg-blue-50 p-3 rounded-lg">
             <span className="text-lg font-bold text-gray-900">Toplam:</span>
             <span className="text-2xl font-bold text-blue-600">{total.toFixed(2)} ₺</span>

@@ -108,17 +108,19 @@ export default function ServiceSelectDropdown({
                   return (
                     <label
                       key={service.id}
-                      className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                      style={{ padding: '8px 12px', height: '44px' }}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleToggleService(service.id)}
-                        className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        style={{ width: '16px', height: '16px' }}
                       />
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">{service.name}</p>
-                        <p className="text-xs text-gray-600">{service.default_price.toFixed(2)} ₺</p>
+                        <p className="text-xs font-medium text-gray-900" style={{ fontSize: '13px' }}>{service.name}</p>
+                        <p className="text-xs text-gray-600" style={{ fontSize: '11px' }}>{service.default_price.toFixed(2)} ₺</p>
                       </div>
                     </label>
                   )

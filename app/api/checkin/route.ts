@@ -156,9 +156,22 @@ export async function POST(request: Request) {
 
     // Update loyalty level based on visit count
     if (newVisitCount !== null) {
-      const newLevel = newVisitCount >= 30 ? 'PLATINUM' :
-                       newVisitCount >= 20 ? 'GOLD' :
-                       newVisitCount >= 10 ? 'SILVER' : 'BRONZE'
+      // Load salon thresholds
+      const { data: salonData } = await supabase
+        .from('salons')
+        .select('loyalty_silver_min_visits, loyalty_gold_min_visits, loyalty_platinum_min_visits, loyalty_vip_min_visits')
+        .eq('id', salon.id)
+        .single()
+      
+      const vipThreshold = salonData?.loyalty_vip_min_visits ?? 40
+      const platinumThreshold = salonData?.loyalty_platinum_min_visits ?? 30
+      const goldThreshold = salonData?.loyalty_gold_min_visits ?? 20
+      const silverThreshold = salonData?.loyalty_silver_min_visits ?? 10
+      
+      const newLevel = newVisitCount >= vipThreshold ? 'VIP' :
+                       newVisitCount >= platinumThreshold ? 'PLATINUM' :
+                       newVisitCount >= goldThreshold ? 'GOLD' :
+                       newVisitCount >= silverThreshold ? 'SILVER' : 'BRONZE'
       
       // Check if level changed
       const { data: currentCustomer } = await supabase
