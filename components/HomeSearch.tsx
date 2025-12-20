@@ -290,7 +290,6 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   }
 
   const hasSearchResults = searchQuery.length >= 2
-  const showRecent = !hasSearchResults && initialRecentCustomers.length > 0
 
   return (
     <div className="space-y-6">
@@ -428,25 +427,6 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
         </div>
       )}
 
-      {/* Recent Customers */}
-      {showRecent && (
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900">Son Müşteriler</h2>
-            <Badge variant="default">{initialRecentCustomers.length} müşteri</Badge>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {initialRecentCustomers.map((customer) => (
-              <CustomerCard
-                key={customer.id}
-                customer={customer}
-                onClick={() => handleCustomerClick(customer)}
-                onQuickVisit={(customer) => handleQuickVisit(customer)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Create Customer Modal */}
       {showCreateModal && (
