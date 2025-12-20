@@ -627,10 +627,10 @@ export default function InvoiceModal({
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-1 text-left text-xs font-semibold text-gray-700">Hizmet</th>
-                    <th className="px-4 py-1 text-left text-xs font-semibold text-gray-700">Personel</th>
-                    <th className="px-4 py-1 text-right text-xs font-semibold text-gray-700">Tutar</th>
-                    <th className="px-4 py-1 text-center text-xs font-semibold text-gray-700">İşlem</th>
+                    <th className="px-4 text-left text-xs font-semibold text-gray-700" style={{ paddingTop: '7px', paddingBottom: '7px' }}>Hizmet</th>
+                    <th className="px-4 text-left text-xs font-semibold text-gray-700" style={{ paddingTop: '7px', paddingBottom: '7px' }}>Personel</th>
+                    <th className="text-right text-xs font-semibold text-gray-700" style={{ paddingTop: '7px', paddingBottom: '7px', paddingLeft: '72px', paddingRight: '72px' }}>Tutar</th>
+                    <th className="px-4 text-center text-xs font-semibold text-gray-700" style={{ paddingTop: '7px', paddingBottom: '7px' }}>İşlem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
