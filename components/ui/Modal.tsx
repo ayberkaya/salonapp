@@ -55,16 +55,16 @@ export default function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div
         ref={modalRef}
         className={cn(
-          'w-full rounded-lg bg-white shadow-xl',
+          'w-full rounded-lg bg-white shadow-xl max-h-[90vh] flex flex-col',
           sizes[size]
         )}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 flex-shrink-0">
             <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
             <button
               onClick={onClose}
@@ -77,7 +77,10 @@ export default function Modal({
             </button>
           </div>
         )}
-        <div className={title ? 'p-6' : 'p-6'}>{children}</div>
+        <div className={cn(
+          title ? 'p-6' : 'p-6',
+          'overflow-y-auto flex-1'
+        )}>{children}</div>
       </div>
     </div>,
     document.body

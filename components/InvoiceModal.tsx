@@ -325,7 +325,7 @@ export default function InvoiceModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Adisyon" size="lg">
-      <div className="space-y-6">
+      <div className="space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
         {/* Progress Steps */}
         <div className="flex items-center justify-between">
           {['Müşteri', 'Hizmetler', 'Personel', 'Özet'].map((stepName, index) => {
@@ -456,6 +456,7 @@ export default function InvoiceModal({
             {invoiceItems.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-gray-900">Seçilen Hizmetler</h3>
+                <div className="max-h-64 overflow-y-auto space-y-2">
                 {invoiceItems.map((item) => (
                   <Card key={item.service_id} className="p-4">
                     <div className="flex items-center justify-between">
@@ -510,6 +511,7 @@ export default function InvoiceModal({
                     </div>
                   </Card>
                 ))}
+                </div>
               </div>
             )}
 
@@ -526,7 +528,7 @@ export default function InvoiceModal({
         {step === 'staff' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Personel Seçimi</h3>
-            <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto">
               {staffList.map((staff) => (
                 <button
                   key={staff.id}
@@ -572,7 +574,7 @@ export default function InvoiceModal({
 
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Hizmetler</h3>
-              <div className="space-y-2">
+              <div className="max-h-64 overflow-y-auto space-y-2">
                 {invoiceItems.map((item) => (
                   <div
                     key={item.service_id}
@@ -637,7 +639,7 @@ export default function InvoiceModal({
         )}
 
         {/* Navigation Buttons */}
-        <div className="flex gap-2 pt-4 border-t">
+        <div className="flex gap-2 pt-4 border-t flex-shrink-0">
           {step !== 'customer' && (
             <Button
               variant="ghost"
