@@ -134,7 +134,7 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Triggers for updated_at
 CREATE TRIGGER update_campaign_templates_updated_at

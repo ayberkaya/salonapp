@@ -169,5 +169,5 @@ CREATE POLICY "Visit tokens can be updated for check-in"
 CREATE OR REPLACE FUNCTION get_user_salon_id()
 RETURNS UUID AS $$
   SELECT salon_id FROM profiles WHERE id = auth.uid();
-$$ LANGUAGE sql SECURITY DEFINER;
+$$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
 
