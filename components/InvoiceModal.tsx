@@ -627,22 +627,22 @@ export default function InvoiceModal({
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-1.5 text-left text-xs font-semibold text-gray-700">Hizmet</th>
-                    <th className="px-4 py-1.5 text-left text-xs font-semibold text-gray-700">Personel</th>
-                    <th className="px-4 py-1.5 text-right text-xs font-semibold text-gray-700">Tutar</th>
-                    <th className="px-4 py-1.5 text-center text-xs font-semibold text-gray-700">İşlem</th>
+                    <th className="px-4 py-1 text-left text-xs font-semibold text-gray-700">Hizmet</th>
+                    <th className="px-4 py-1 text-left text-xs font-semibold text-gray-700">Personel</th>
+                    <th className="px-4 py-1 text-right text-xs font-semibold text-gray-700">Tutar</th>
+                    <th className="px-4 py-1 text-center text-xs font-semibold text-gray-700">İşlem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {invoiceServices.map((service) => (
                     <tr key={service.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-1.5 text-sm font-medium text-gray-900">
+                      <td className="px-4 py-1 text-sm font-medium text-gray-900">
                         {service.service_name}
                       </td>
-                      <td className="px-4 py-1.5 text-sm text-gray-600">
+                      <td className="px-4 py-1 text-sm text-gray-600">
                         {service.staff_name || '-'}
                       </td>
-                      <td className="px-4 py-1.5 text-right">
+                      <td className="px-4 py-1 text-right">
                         <Input
                           type="number"
                           value={service.unit_price}
@@ -655,7 +655,7 @@ export default function InvoiceModal({
                         />
                         <span className="ml-2 text-xs text-gray-600">₺</span>
                       </td>
-                      <td className="px-4 py-1.5 text-center">
+                      <td className="px-4 py-1 text-center">
                         <button
                           onClick={() => handleRemoveService(service.id)}
                           className="rounded-lg p-1 text-red-600 hover:bg-red-50 transition-colors"
