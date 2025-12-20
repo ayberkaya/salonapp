@@ -30,16 +30,16 @@ export default async function SettingsPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="p-6">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Hesap Bilgileri</h2>
-            <div className="space-y-4">
+          <Card style={{ padding: '16.8px' }}>
+            <h2 className="mb-3 text-lg font-semibold text-gray-900">Hesap Bilgileri</h2>
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
-                <p className="mt-1 text-gray-900">{profile.full_name}</p>
+                <label className="block text-xs font-medium text-gray-700">Ad Soyad</label>
+                <p className="mt-0.5 text-sm text-gray-900">{profile.full_name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Rol</label>
-                <p className="mt-1 text-gray-900">{profile.role === 'OWNER' ? 'Sahip' : 'Personel'}</p>
+                <label className="block text-xs font-medium text-gray-700">Rol</label>
+                <p className="mt-0.5 text-sm text-gray-900">{profile.role === 'OWNER' ? 'Sahip' : 'Personel'}</p>
               </div>
             </div>
           </Card>

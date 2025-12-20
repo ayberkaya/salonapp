@@ -19,7 +19,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Müşteriler', href: '/customers', icon: Users, roles: ['OWNER', 'STAFF'] },
   { label: 'Adisyonlar', href: '/invoices', icon: Receipt, roles: ['OWNER', 'STAFF'] },
-  { label: 'Hizmetler', href: '/services', icon: Scissors, roles: ['OWNER', 'STAFF'] },
   { label: 'Kampanyalar', href: '/campaigns', icon: Mail, roles: ['OWNER'] },
 ]
 
