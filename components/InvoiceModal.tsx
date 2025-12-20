@@ -242,18 +242,25 @@ export default function InvoiceModal({
 
   const updateInvoiceServices = () => {
     const allServices: InvoiceService[] = []
+    const seenServices = new Set<string>()
+    
     serviceRows.forEach(row => {
       if (row.staff_id && row.services.length > 0) {
         row.services.forEach(service => {
-          allServices.push({
-            id: `${row.id}-${service.id}`,
-            service_id: service.id,
-            service_name: service.name,
-            staff_id: row.staff_id,
-            staff_name: row.staff_name,
-            unit_price: service.price,
-            total_price: service.price
-          })
+          // Create unique key to avoid duplicates
+          const uniqueKey = `${row.staff_id}-${service.id}`
+          if (!seenServices.has(uniqueKey)) {
+            seenServices.add(uniqueKey)
+            allServices.push({
+              id: `${row.id}-${service.id}-${Date.now()}`,
+              service_id: service.id,
+              service_name: service.name,
+              staff_id: row.staff_id,
+              staff_name: row.staff_name,
+              unit_price: service.price,
+              total_price: service.price
+            })
+          }
         })
       }
     })
@@ -261,7 +268,11 @@ export default function InvoiceModal({
   }
 
   useEffect(() => {
-    updateInvoiceServices()
+    // Use a small delay to ensure state is updated
+    const timer = setTimeout(() => {
+      updateInvoiceServices()
+    }, 50)
+    return () => clearTimeout(timer)
   }, [serviceRows])
 
   const handleServicePriceChange = (serviceId: string, price: number) => {
