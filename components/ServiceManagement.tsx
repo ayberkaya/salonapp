@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
-import { Scissors, Plus, Edit2, Trash2, X, Save, FolderOpen } from 'lucide-react'
+import { Scissors, Plus, Edit2, Trash2, X, Save, FolderOpen, ChevronDown, ChevronUp } from 'lucide-react'
 
 type ServiceCategory = {
   id: string
@@ -55,6 +55,7 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
     name: '',
   })
   const [saving, setSaving] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadData()
@@ -403,6 +404,18 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
     }
   }
 
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId)
+      } else {
+        newSet.add(categoryId)
+      }
+      return newSet
+    })
+  }
+
   const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
     // Check if category has services
     const servicesInCategory = services.filter((s) => s.category_id === categoryId)
@@ -462,11 +475,22 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
             {categories.map((category) => {
               const categoryServices = servicesByCategory.grouped[category.id] || []
               if (categoryServices.length === 0) return null
+              const isExpanded = expandedCategories.has(category.id)
 
               return (
                 <div key={category.id} className="space-y-2">
                   <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                    <button
+                      onClick={() => toggleCategory(category.id)}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-600" />
+                      )}
+                      <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                    </button>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -485,8 +509,9 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
                       </Button>
                     </div>
                   </div>
-                  <div className="space-y-2 pl-4">
-                    {categoryServices.map((service) => (
+                  {isExpanded && (
+                    <div className="space-y-2 pl-4">
+                      {categoryServices.map((service) => (
                       <div
                         key={service.id}
                         className="flex items-center justify-between rounded-lg border border-gray-200 bg-white transition-colors hover:bg-gray-50"
@@ -532,7 +557,8 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -540,11 +566,20 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
             {/* Uncategorized services */}
             {servicesByCategory.uncategorized.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                  Kategorisiz
-                </h3>
-                <div className="space-y-2 pl-4">
-                  {servicesByCategory.uncategorized.map((service) => (
+                <button
+                  onClick={() => toggleCategory('uncategorized')}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity border-b border-gray-200 pb-2 w-full text-left"
+                >
+                  {expandedCategories.has('uncategorized') ? (
+                    <ChevronUp className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  )}
+                  <h3 className="text-lg font-semibold text-gray-900">Kategorisiz</h3>
+                </button>
+                {expandedCategories.has('uncategorized') && (
+                  <div className="space-y-2 pl-4">
+                    {servicesByCategory.uncategorized.map((service) => (
                     <div
                       key={service.id}
                       className="flex items-center justify-between rounded-lg border border-gray-200 bg-white transition-colors hover:bg-gray-50"
@@ -590,7 +625,8 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
