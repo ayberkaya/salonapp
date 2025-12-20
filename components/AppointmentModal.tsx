@@ -58,6 +58,7 @@ interface AppointmentModalProps {
     services?: { name: string } | null
   } | null
   initialDate?: Date | null
+  initialStaffId?: string
 }
 
 export default function AppointmentModal({
@@ -67,6 +68,7 @@ export default function AppointmentModal({
   profileId,
   appointment,
   initialDate,
+  initialStaffId,
 }: AppointmentModalProps) {
   const supabase = createClient()
   const { showToast } = useToast()
@@ -206,6 +208,28 @@ export default function AppointmentModal({
       }
     }
   }, [isOpen, appointment, initialDate])
+  
+  // Handle initialStaffId separately after staffList is loaded
+  useEffect(() => {
+    if (isOpen && !appointment && initialStaffId && staffList.length > 0) {
+      const selectedStaff = staffList.find(s => s.id === initialStaffId)
+      if (selectedStaff) {
+        setServiceRows(prev => {
+          // Only update if first row doesn't have staff selected
+          if (prev.length > 0 && !prev[0].staff_id) {
+            const newRows = [...prev]
+            newRows[0] = {
+              ...newRows[0],
+              staff_id: initialStaffId,
+              staff_name: selectedStaff.full_name
+            }
+            return newRows
+          }
+          return prev
+        })
+      }
+    }
+  }, [isOpen, appointment, initialStaffId, staffList])
 
   useEffect(() => {
     if (customerSearch.length >= 2) {
@@ -218,13 +242,35 @@ export default function AppointmentModal({
   const resetForm = () => {
     setSelectedCustomer(null)
     setCustomerSearch('')
-    setServiceRows([{
-      id: `row-${Date.now()}`,
-      staff_id: null,
-      staff_name: null,
-      service_ids: [],
-      services: []
-    }])
+    // If initialStaffId is provided, set it in the first row
+    if (initialStaffId) {
+      const selectedStaff = staffList.find(s => s.id === initialStaffId)
+      if (selectedStaff) {
+        setServiceRows([{
+          id: `row-${Date.now()}`,
+          staff_id: initialStaffId,
+          staff_name: selectedStaff.full_name,
+          service_ids: [],
+          services: []
+        }])
+      } else {
+        setServiceRows([{
+          id: `row-${Date.now()}`,
+          staff_id: null,
+          staff_name: null,
+          service_ids: [],
+          services: []
+        }])
+      }
+    } else {
+      setServiceRows([{
+        id: `row-${Date.now()}`,
+        staff_id: null,
+        staff_name: null,
+        service_ids: [],
+        services: []
+      }])
+    }
     setFormData({
       appointment_date: '',
       appointment_time: '',

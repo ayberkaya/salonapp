@@ -47,6 +47,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const { showToast } = useToast()
 
   const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [staffList, setStaffList] = useState<Array<{ id: string; full_name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('all')
@@ -54,10 +55,25 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedStaffId, setSelectedStaffId] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     loadAppointments()
+    loadStaff()
   }, [dateFilter, statusFilter])
+
+  const loadStaff = async () => {
+    const { data } = await supabase
+      .from('staff')
+      .select('id, full_name')
+      .eq('salon_id', profile.salon_id)
+      .eq('is_active', true)
+      .order('full_name')
+
+    if (data) {
+      setStaffList(data)
+    }
+  }
 
   const loadAppointments = async () => {
     setLoading(true)
@@ -301,13 +317,16 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
             }
             return true
           })}
-          onDateClick={(date) => {
+          staffList={staffList}
+          onDateClick={(date, staffId) => {
             setSelectedDate(date)
+            setSelectedStaffId(staffId)
             setEditingAppointment(null)
             setShowAppointmentModal(true)
           }}
           onAppointmentClick={(appointment) => {
             setEditingAppointment(appointment)
+            setSelectedStaffId(undefined)
             setShowAppointmentModal(true)
           }}
         />
@@ -426,6 +445,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
           setShowAppointmentModal(false)
           setEditingAppointment(null)
           setSelectedDate(null)
+          setSelectedStaffId(undefined)
           loadAppointments()
         }}
         salonId={profile.salon_id}
@@ -442,6 +462,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
           customers: editingAppointment.customers,
         } : null}
         initialDate={selectedDate}
+        initialStaffId={selectedStaffId}
       />
     </div>
   )
