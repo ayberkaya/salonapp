@@ -5,16 +5,25 @@ export type Database = {
         Row: {
           id: string
           name: string
+          working_days: string[] | null
+          opening_time: string | null
+          closing_time: string | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
+          working_days?: string[] | null
+          opening_time?: string | null
+          closing_time?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
+          working_days?: string[] | null
+          opening_time?: string | null
+          closing_time?: string | null
           created_at?: string
         }
       }

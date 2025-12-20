@@ -11,7 +11,7 @@ import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import EmptyState from '@/components/ui/EmptyState'
-import { Calendar, Clock, Users, MessageSquare, Plus, Edit2, Trash2, Send, Save, X } from 'lucide-react'
+import { Calendar, Clock, Users, MessageSquare, Plus, Edit2, Trash2, Send, Save, X, Tag } from 'lucide-react'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -39,6 +39,22 @@ type Campaign = {
   created_at: string
   updated_at: string
 }
+type DiscountCode = {
+  id: string
+  salon_id: string
+  code_name: string
+  discount_percentage: number
+  valid_from: string
+  valid_until: string
+  customer_id: string | null
+  max_usage: number | null
+  usage_count: number
+  is_active: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+  customers?: { full_name: string; phone: string } | null
+}
 
 interface CampaignsViewProps {
   profile: Profile
@@ -55,7 +71,7 @@ export default function CampaignsView({
   const supabase = createClient()
   
   // State management
-  const [activeTab, setActiveTab] = useState<'create' | 'templates' | 'scheduled' | 'history'>('create')
+  const [activeTab, setActiveTab] = useState<'create' | 'templates' | 'scheduled' | 'history' | 'discounts'>('create')
   const [selectedCustomers, setSelectedCustomers] = useState<Set<string>>(new Set())
   const [campaignMessage, setCampaignMessage] = useState('')
   const [campaignName, setCampaignName] = useState('')
@@ -83,11 +99,41 @@ export default function CampaignsView({
   const [loading, setLoading] = useState(false)
   const [loadingStats, setLoadingStats] = useState(false)
 
+  // Discount codes state
+  const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
+  const [loadingDiscountCodes, setLoadingDiscountCodes] = useState(false)
+  const [showDiscountModal, setShowDiscountModal] = useState(false)
+  const [editingDiscount, setEditingDiscount] = useState<DiscountCode | null>(null)
+  const [discountFormData, setDiscountFormData] = useState({
+    code_name: '',
+    discount_percentage: 10,
+    valid_from: '',
+    valid_until: '',
+    customer_id: '',
+    max_usage: '',
+    is_active: true,
+  })
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [discountCustomers, setDiscountCustomers] = useState<Customer[]>([])
+  const [selectedDiscountCustomer, setSelectedDiscountCustomer] = useState<Customer | null>(null)
+
   // Load templates and campaigns
   useEffect(() => {
     loadTemplates()
     loadCampaigns()
-  }, [])
+    if (activeTab === 'discounts') {
+      loadDiscountCodes()
+    }
+  }, [activeTab])
+
+  // Search customers for discount code
+  useEffect(() => {
+    if (customerSearch.length >= 2) {
+      searchCustomersForDiscount(customerSearch)
+    } else {
+      setDiscountCustomers([])
+    }
+  }, [customerSearch])
 
   const loadTemplates = async () => {
     const { data, error } = await supabase
@@ -99,6 +145,170 @@ export default function CampaignsView({
     if (!error && data) {
       setTemplates(data as CampaignTemplate[])
     }
+  }
+
+  const loadDiscountCodes = async () => {
+    setLoadingDiscountCodes(true)
+    const { data, error } = await supabase
+      .from('discount_codes')
+      .select(`
+        *,
+        customers:customer_id (
+          full_name,
+          phone
+        )
+      `)
+      .eq('salon_id', profile.salon_id)
+      .order('created_at', { ascending: false })
+
+    if (!error && data) {
+      setDiscountCodes(data.map((item: any) => ({
+        ...item,
+        customers: Array.isArray(item.customers) ? item.customers[0] : item.customers,
+      })) as DiscountCode[])
+    }
+    setLoadingDiscountCodes(false)
+  }
+
+  const searchCustomersForDiscount = async (search: string) => {
+    if (search.length < 2) {
+      setDiscountCustomers([])
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('salon_id', profile.salon_id)
+      .or(`full_name.ilike.%${search}%,phone.ilike.%${search}%`)
+      .limit(10)
+
+    if (!error && data) {
+      setDiscountCustomers(data)
+    }
+  }
+
+  const handleSaveDiscountCode = async () => {
+    if (!discountFormData.code_name.trim()) {
+      showToast('Kod ismi gereklidir', 'error')
+      return
+    }
+
+    if (discountFormData.discount_percentage <= 0 || discountFormData.discount_percentage > 100) {
+      showToast('İndirim oranı 1-100 arasında olmalıdır', 'error')
+      return
+    }
+
+    if (!discountFormData.valid_from || !discountFormData.valid_until) {
+      showToast('Geçerlilik tarihleri gereklidir', 'error')
+      return
+    }
+
+    const validFrom = new Date(discountFormData.valid_from)
+    const validUntil = new Date(discountFormData.valid_until)
+
+    if (validUntil <= validFrom) {
+      showToast('Bitiş tarihi başlangıç tarihinden sonra olmalıdır', 'error')
+      return
+    }
+
+    const discountData: any = {
+      salon_id: profile.salon_id,
+      code_name: discountFormData.code_name.trim(),
+      discount_percentage: discountFormData.discount_percentage,
+      valid_from: validFrom.toISOString(),
+      valid_until: validUntil.toISOString(),
+      customer_id: selectedDiscountCustomer?.id || null,
+      max_usage: discountFormData.max_usage ? parseInt(discountFormData.max_usage) : null,
+      is_active: discountFormData.is_active,
+      created_by: profile.id,
+    }
+
+    if (editingDiscount) {
+      const { error } = await supabase
+        .from('discount_codes')
+        .update(discountData)
+        .eq('id', editingDiscount.id)
+
+      if (error) {
+        showToast('İndirim kodu güncellenirken hata oluştu', 'error')
+        console.error('Update error:', error)
+      } else {
+        showToast('İndirim kodu başarıyla güncellendi', 'success')
+        setShowDiscountModal(false)
+        setEditingDiscount(null)
+        loadDiscountCodes()
+      }
+    } else {
+      const { error } = await supabase
+        .from('discount_codes')
+        .insert(discountData)
+
+      if (error) {
+        showToast('İndirim kodu oluşturulurken hata oluştu', 'error')
+        console.error('Insert error:', error)
+      } else {
+        showToast('İndirim kodu başarıyla oluşturuldu', 'success')
+        setShowDiscountModal(false)
+        resetDiscountForm()
+        loadDiscountCodes()
+      }
+    }
+  }
+
+  const handleDeleteDiscountCode = async (id: string) => {
+    if (!window.confirm('Bu indirim kodunu silmek istediğinizden emin misiniz?')) {
+      return
+    }
+
+    const { error } = await supabase
+      .from('discount_codes')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      showToast('İndirim kodu silinirken hata oluştu', 'error')
+    } else {
+      showToast('İndirim kodu başarıyla silindi', 'success')
+      loadDiscountCodes()
+    }
+  }
+
+  const resetDiscountForm = () => {
+    setDiscountFormData({
+      code_name: '',
+      discount_percentage: 10,
+      valid_from: '',
+      valid_until: '',
+      customer_id: '',
+      max_usage: '',
+      is_active: true,
+    })
+    setSelectedDiscountCustomer(null)
+    setCustomerSearch('')
+    setDiscountCustomers([])
+  }
+
+  const handleEditDiscount = (discount: DiscountCode) => {
+    setEditingDiscount(discount)
+    setDiscountFormData({
+      code_name: discount.code_name,
+      discount_percentage: discount.discount_percentage,
+      valid_from: new Date(discount.valid_from).toISOString().split('T')[0],
+      valid_until: new Date(discount.valid_until).toISOString().split('T')[0],
+      customer_id: discount.customer_id || '',
+      max_usage: discount.max_usage?.toString() || '',
+      is_active: discount.is_active,
+    })
+    if (discount.customers) {
+      setSelectedDiscountCustomer({
+        id: discount.customer_id || '',
+        full_name: discount.customers.full_name,
+        phone: discount.customers.phone,
+      } as Customer)
+      setCustomerSearch(discount.customers.full_name)
+    }
+    setShowDiscountModal(true)
   }
 
   const loadCampaigns = async () => {
@@ -577,6 +787,17 @@ export default function CampaignsView({
             <Calendar className="mr-2 inline h-4 w-4" />
             Geçmiş
           </button>
+          <button
+            onClick={() => setActiveTab('discounts')}
+            className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+              activeTab === 'discounts'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            <Tag className="mr-2 inline h-4 w-4" />
+            İndirim Kodları
+          </button>
         </nav>
       </div>
 
@@ -1043,6 +1264,103 @@ export default function CampaignsView({
         </div>
       )}
 
+      {/* Discount Codes Tab */}
+      {activeTab === 'discounts' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">İndirim Kodları</h2>
+            <Button onClick={() => {
+              resetDiscountForm()
+              setShowDiscountModal(true)
+            }}>
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni İndirim Kodu
+            </Button>
+          </div>
+
+          {loadingDiscountCodes ? (
+            <div className="py-8 text-center text-gray-500">Yükleniyor...</div>
+          ) : discountCodes.length === 0 ? (
+            <EmptyState
+              title="Henüz indirim kodu yok"
+              description="Müşterilerinize özel indirim kodları oluşturun"
+            />
+          ) : (
+            <div className="space-y-3">
+              {discountCodes.map((code) => {
+                const now = new Date()
+                const validFrom = new Date(code.valid_from)
+                const validUntil = new Date(code.valid_until)
+                const isExpired = now > validUntil
+                const isNotStarted = now < validFrom
+                const isValid = !isExpired && !isNotStarted && code.is_active
+
+                return (
+                  <Card key={code.id} className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900">{code.code_name}</h3>
+                          {isValid ? (
+                            <Badge variant="success">Aktif</Badge>
+                          ) : isExpired ? (
+                            <Badge variant="error">Süresi Dolmuş</Badge>
+                          ) : isNotStarted ? (
+                            <Badge variant="warning">Başlamadı</Badge>
+                          ) : (
+                            <Badge variant="error">Pasif</Badge>
+                          )}
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                          <span className="font-medium text-blue-600">%{code.discount_percentage} İndirim</span>
+                          <span>
+                            <Calendar className="mr-1 inline h-3 w-3" />
+                            {new Date(code.valid_from).toLocaleDateString('tr-TR')} - {new Date(code.valid_until).toLocaleDateString('tr-TR')}
+                          </span>
+                          {code.customers && (
+                            <span>
+                              <Users className="mr-1 inline h-3 w-3" />
+                              {code.customers.full_name}
+                            </span>
+                          )}
+                          {code.max_usage && (
+                            <span>
+                              Kullanım: {code.usage_count}/{code.max_usage}
+                            </span>
+                          )}
+                          {!code.max_usage && code.usage_count > 0 && (
+                            <span>
+                              Kullanım: {code.usage_count}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditDiscount(code)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDiscountCode(code.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Confirm Modal */}
       {showConfirmModal && (
         <Modal
@@ -1201,6 +1519,175 @@ export default function CampaignsView({
                 className="flex-1"
               >
                 {loading ? 'Kaydediliyor...' : editingTemplate ? 'Güncelle' : 'Kaydet'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Discount Code Modal */}
+      {showDiscountModal && (
+        <Modal
+          isOpen={showDiscountModal}
+          onClose={() => {
+            setShowDiscountModal(false)
+            setEditingDiscount(null)
+            resetDiscountForm()
+          }}
+          title={editingDiscount ? 'İndirim Kodu Düzenle' : 'Yeni İndirim Kodu'}
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kod İsmi <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                value={discountFormData.code_name}
+                onChange={(e) => setDiscountFormData({ ...discountFormData, code_name: e.target.value })}
+                placeholder="Örn: YAZ2024"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                İndirim Oranı (%) <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                value={discountFormData.discount_percentage}
+                onChange={(e) => setDiscountFormData({ ...discountFormData, discount_percentage: parseInt(e.target.value) || 0 })}
+                placeholder="10"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Başlangıç Tarihi <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={discountFormData.valid_from}
+                  onChange={(e) => setDiscountFormData({ ...discountFormData, valid_from: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bitiş Tarihi <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={discountFormData.valid_until}
+                  onChange={(e) => setDiscountFormData({ ...discountFormData, valid_until: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Maksimum Kullanım (Opsiyonel)
+              </label>
+              <Input
+                type="number"
+                min="1"
+                value={discountFormData.max_usage}
+                onChange={(e) => setDiscountFormData({ ...discountFormData, max_usage: e.target.value })}
+                placeholder="Sınırsız için boş bırakın"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Geçerli Olacak Müşteri (Opsiyonel)
+              </label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => {
+                    setCustomerSearch(e.target.value)
+                    searchCustomersForDiscount(e.target.value)
+                  }}
+                  placeholder="Müşteri ara (isim veya telefon)..."
+                  className="pl-10"
+                />
+                <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                {customerSearch.length >= 2 && discountCustomers.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full rounded-lg border-2 border-blue-200 bg-white shadow-xl max-h-64 overflow-y-auto">
+                    <div className="p-2">
+                      {discountCustomers.map((customer) => (
+                        <button
+                          key={customer.id}
+                          onClick={() => {
+                            setSelectedDiscountCustomer(customer)
+                            setCustomerSearch(customer.full_name)
+                            setDiscountCustomers([])
+                          }}
+                          className="w-full rounded-lg p-2 text-left hover:bg-gray-100"
+                        >
+                          <div className="font-medium text-gray-900">{customer.full_name}</div>
+                          <div className="text-sm text-gray-600">{customer.phone}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {selectedDiscountCustomer && (
+                <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">{selectedDiscountCustomer.full_name}</div>
+                      <div className="text-sm text-gray-600">{selectedDiscountCustomer.phone}</div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDiscountCustomer(null)
+                        setCustomerSearch('')
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_active"
+                checked={discountFormData.is_active}
+                onChange={(e) => setDiscountFormData({ ...discountFormData, is_active: e.target.checked })}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="is_active" className="text-sm text-gray-700">
+                Aktif
+              </label>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowDiscountModal(false)
+                  setEditingDiscount(null)
+                  resetDiscountForm()
+                }}
+                className="flex-1"
+              >
+                <X className="mr-2 h-4 w-4" />
+                İptal
+              </Button>
+              <Button onClick={handleSaveDiscountCode} className="flex-1">
+                <Save className="mr-2 h-4 w-4" />
+                {editingDiscount ? 'Güncelle' : 'Oluştur'}
               </Button>
             </div>
           </div>

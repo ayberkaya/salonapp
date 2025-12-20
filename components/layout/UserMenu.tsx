@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
-import { LogOut, Settings, User, ChevronDown, Scissors } from 'lucide-react'
+import { LogOut, Settings, User, ChevronDown, Scissors, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -68,6 +68,17 @@ export default function UserMenu({ profile }: { profile: Profile }) {
               <Scissors className="h-4 w-4 text-gray-400" />
               <span>Hizmetler</span>
             </Link>
+            
+            {profile.role === 'OWNER' && (
+              <Link
+                href="/staff"
+                onClick={() => setIsOpen(false)}
+                className="cursor-pointer flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+              >
+                <Users className="h-4 w-4 text-gray-400" />
+                <span>Personel Yönetimi</span>
+              </Link>
+            )}
             
             <Link
               href="/settings"

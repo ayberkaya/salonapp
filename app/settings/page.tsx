@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/layout/Header'
 import { Settings as SettingsIcon } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import StaticRegistrationQR from '@/components/StaticRegistrationQR'
-import StaffManagement from '@/components/StaffManagement'
+import SalonSettings from '@/components/SalonSettings'
 
 export default async function SettingsPage() {
   const profile = await getCurrentProfile()
@@ -12,6 +13,13 @@ export default async function SettingsPage() {
   if (!profile) {
     redirect('/login')
   }
+
+  const supabase = await createClient()
+  const { data: salon } = await supabase
+    .from('salons')
+    .select('*')
+    .eq('id', profile.salon_id)
+    .single()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -45,16 +53,10 @@ export default async function SettingsPage() {
           </Card>
 
           {profile.role === 'OWNER' && (
-            <>
-              <StaticRegistrationQR salonId={profile.salon_id} />
-              <StaffManagement salonId={profile.salon_id} profileId={profile.id} />
-            </>
+            <StaticRegistrationQR salonId={profile.salon_id} />
           )}
 
-          <Card className="p-6">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Salon Ayarları</h2>
-            <p className="text-gray-600">Salon ayarları yakında eklenecek.</p>
-          </Card>
+          <SalonSettings salonId={profile.salon_id} initialSalon={salon} />
         </div>
       </div>
     </div>
