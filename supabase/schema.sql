@@ -65,9 +65,12 @@ CREATE INDEX idx_customers_last_visit_at ON customers(last_visit_at);
 CREATE INDEX idx_visits_salon_id ON visits(salon_id);
 CREATE INDEX idx_visits_customer_id ON visits(customer_id);
 CREATE INDEX idx_visits_visited_at ON visits(visited_at);
+CREATE INDEX idx_visits_created_by ON visits(created_by);
 CREATE INDEX idx_visit_tokens_token ON visit_tokens(token);
 CREATE INDEX idx_visit_tokens_customer_id ON visit_tokens(customer_id);
 CREATE INDEX idx_visit_tokens_expires_at ON visit_tokens(expires_at);
+CREATE INDEX idx_visit_tokens_salon_id ON visit_tokens(salon_id);
+CREATE INDEX idx_visit_tokens_created_by ON visit_tokens(created_by);
 
 -- RLS Policies
 

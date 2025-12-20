@@ -43,10 +43,13 @@ CREATE TABLE campaign_recipients (
 -- Indexes for performance
 CREATE INDEX idx_campaign_templates_salon_id ON campaign_templates(salon_id);
 CREATE INDEX idx_campaign_templates_type ON campaign_templates(campaign_type);
+CREATE INDEX idx_campaign_templates_created_by ON campaign_templates(created_by);
 CREATE INDEX idx_campaigns_salon_id ON campaigns(salon_id);
 CREATE INDEX idx_campaigns_status ON campaigns(status);
 CREATE INDEX idx_campaigns_scheduled_at ON campaigns(scheduled_at);
 CREATE INDEX idx_campaigns_type ON campaigns(campaign_type);
+CREATE INDEX idx_campaigns_created_by ON campaigns(created_by);
+CREATE INDEX idx_campaigns_template_id ON campaigns(template_id);
 CREATE INDEX idx_campaign_recipients_campaign_id ON campaign_recipients(campaign_id);
 CREATE INDEX idx_campaign_recipients_customer_id ON campaign_recipients(customer_id);
 CREATE INDEX idx_campaign_recipients_status ON campaign_recipients(status);
