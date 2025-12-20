@@ -479,19 +479,19 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
 
               return (
                 <div key={category.id} className="space-y-2">
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-                    <button
-                      onClick={() => toggleCategory(category.id)}
-                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                    >
+                  <div
+                    className="flex items-center justify-between border-b border-gray-200 pb-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded transition-colors"
+                    onClick={() => toggleCategory(category.id)}
+                  >
+                    <div className="flex items-center gap-2">
                       {isExpanded ? (
                         <ChevronUp className="h-4 w-4 text-gray-600" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-gray-600" />
                       )}
                       <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
-                    </button>
-                    <div className="flex items-center gap-2">
+                    </div>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -566,9 +566,9 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
             {/* Uncategorized services */}
             {servicesByCategory.uncategorized.length > 0 && (
               <div className="space-y-2">
-                <button
+                <div
                   onClick={() => toggleCategory('uncategorized')}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity border-b border-gray-200 pb-2 w-full text-left"
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 py-1 rounded transition-colors border-b border-gray-200 pb-2"
                 >
                   {expandedCategories.has('uncategorized') ? (
                     <ChevronUp className="h-4 w-4 text-gray-600" />
@@ -576,7 +576,7 @@ export default function ServiceManagement({ salonId, profileId }: ServiceManagem
                     <ChevronDown className="h-4 w-4 text-gray-600" />
                   )}
                   <h3 className="text-lg font-semibold text-gray-900">Kategorisiz</h3>
-                </button>
+                </div>
                 {expandedCategories.has('uncategorized') && (
                   <div className="space-y-2 pl-4">
                     {servicesByCategory.uncategorized.map((service) => (
