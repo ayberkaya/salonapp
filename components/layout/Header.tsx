@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Database } from '@/types/database'
 import { cn } from '@/lib/utils'
-import { Users, Mail, Receipt, Scissors } from 'lucide-react'
+import { Users, Mail, Receipt, Scissors, Calendar } from 'lucide-react'
 import UserMenu from './UserMenu'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -19,6 +19,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Müşteriler', href: '/customers', icon: Users, roles: ['OWNER', 'STAFF'] },
   { label: 'Adisyonlar', href: '/invoices', icon: Receipt, roles: ['OWNER', 'STAFF'] },
+  { label: 'Randevular', href: '/appointments', icon: Calendar, roles: ['OWNER', 'STAFF'] },
   { label: 'Kampanyalar', href: '/campaigns', icon: Mail, roles: ['OWNER'] },
 ]
 

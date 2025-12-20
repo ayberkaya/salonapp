@@ -149,6 +149,50 @@ export type Database = {
           created_at?: string
         }
       }
+      appointments: {
+        Row: {
+          id: string
+          salon_id: string
+          customer_id: string
+          staff_id: string | null
+          service_id: string | null
+          appointment_date: string
+          duration_minutes: number
+          status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
+          notes: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          salon_id: string
+          customer_id: string
+          staff_id?: string | null
+          service_id?: string | null
+          appointment_date: string
+          duration_minutes?: number
+          status?: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
+          notes?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          salon_id?: string
+          customer_id?: string
+          staff_id?: string | null
+          service_id?: string | null
+          appointment_date?: string
+          duration_minutes?: number
+          status?: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'
+          notes?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
