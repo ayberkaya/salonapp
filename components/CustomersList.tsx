@@ -44,15 +44,52 @@ export default function CustomersList({
 
     setDeletingId(customerId)
     try {
-      const { error } = await supabase
+      // Check if customer has invoices
+      const { data: invoices, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('customer_id', customerId)
+        .eq('salon_id', profile.salon_id)
+        .limit(1)
+
+      if (invoicesError) {
+        console.error('Error checking invoices:', invoicesError)
+      }
+
+      if (invoices && invoices.length > 0) {
+        showToast('Bu müşterinin adisyon kayıtları bulunmaktadır. Önce adisyonları silmeniz gerekiyor.', 'error')
+        setDeletingId(null)
+        return
+      }
+
+      const { data, error } = await supabase
         .from('customers')
         .delete()
         .eq('id', customerId)
         .eq('salon_id', profile.salon_id)
+        .select()
 
       if (error) {
         console.error('Error deleting customer:', error)
-        showToast('Müşteri silinirken hata oluştu', 'error')
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        
+        // Check if error is due to RLS policy (permission denied)
+        if (error.code === '42501' || error.message?.includes('permission denied') || error.message?.includes('policy')) {
+          showToast('Müşteri silme yetkiniz bulunmuyor. Lütfen yönetici ile iletişime geçin.', 'error')
+        }
+        // Check if error is due to foreign key constraint
+        else if (error.code === '23503' || error.message?.includes('foreign key') || error.message?.includes('violates foreign key')) {
+          showToast('Bu müşterinin adisyon kayıtları bulunmaktadır. Önce adisyonları silmeniz gerekiyor.', 'error')
+        } else {
+          showToast(`Müşteri silinirken hata oluştu: ${error.message || 'Bilinmeyen hata'}`, 'error')
+        }
+        return
+      }
+
+      // Check if actually deleted (data should be an array with the deleted row)
+      if (!data || data.length === 0) {
+        console.error('Delete returned no data - customer may not exist or RLS policy blocked deletion')
+        showToast('Müşteri silinemedi. Lütfen sayfayı yenileyip tekrar deneyin.', 'error')
         return
       }
 
