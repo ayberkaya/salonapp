@@ -325,9 +325,9 @@ export default function InvoiceModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Adisyon" size="lg">
-      <div className="space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+      <div className="space-y-6">
         {/* Progress Steps */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
           {['Müşteri', 'Hizmetler', 'Personel', 'Özet'].map((stepName, index) => {
             const stepKeys: ('customer' | 'services' | 'staff' | 'review')[] = [
               'customer',
@@ -336,22 +336,31 @@ export default function InvoiceModal({
               'review',
             ]
             const currentStepIndex = stepKeys.indexOf(step)
-            const isActive = index <= currentStepIndex
+            const isActive = index === currentStepIndex
+            const isCompleted = index < currentStepIndex
             return (
               <div key={stepName} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
+                    className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all ${
                       isActive
-                        ? 'border-blue-600 bg-blue-600 text-white'
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-lg scale-110'
+                        : isCompleted
+                        ? 'border-green-500 bg-green-500 text-white'
                         : 'border-gray-300 bg-white text-gray-400'
                     }`}
                   >
-                    {index + 1}
+                    {isCompleted ? (
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      index + 1
+                    )}
                   </div>
                   <p
-                    className={`mt-2 text-xs font-medium ${
-                      isActive ? 'text-blue-600' : 'text-gray-400'
+                    className={`mt-3 text-sm font-semibold ${
+                      isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
                     }`}
                   >
                     {stepName}
@@ -359,8 +368,8 @@ export default function InvoiceModal({
                 </div>
                 {index < 3 && (
                   <div
-                    className={`h-0.5 flex-1 mx-2 ${
-                      index < currentStepIndex ? 'bg-blue-600' : 'bg-gray-300'
+                    className={`h-1 flex-1 mx-3 rounded-full transition-all ${
+                      isCompleted ? 'bg-green-500' : index < currentStepIndex ? 'bg-blue-600' : 'bg-gray-300'
                     }`}
                   />
                 )}
@@ -439,30 +448,30 @@ export default function InvoiceModal({
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Hizmetler</h3>
-              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-3 max-h-80 overflow-y-auto p-2">
                 {services.map((service) => (
                   <button
                     key={service.id}
                     onClick={() => handleAddService(service)}
-                    className="rounded-lg border-2 border-gray-200 bg-white p-3 text-left transition-all hover:border-blue-500 hover:bg-blue-50"
+                    className="rounded-lg border-2 border-gray-200 bg-white p-4 text-left transition-all hover:border-blue-500 hover:bg-blue-50 hover:shadow-md"
                   >
-                    <p className="font-medium text-gray-900">{service.name}</p>
-                    <p className="text-sm text-gray-600">{service.default_price.toFixed(2)} ₺</p>
+                    <p className="font-semibold text-gray-900">{service.name}</p>
+                    <p className="text-sm font-medium text-blue-600 mt-1">{service.default_price.toFixed(2)} ₺</p>
                   </button>
                 ))}
               </div>
             </div>
 
             {invoiceItems.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-gray-900">Seçilen Hizmetler</h3>
-                <div className="max-h-64 overflow-y-auto space-y-2">
+                <div className="max-h-72 overflow-y-auto space-y-3 p-2">
                 {invoiceItems.map((item) => (
-                  <Card key={item.service_id} className="p-4">
+                  <Card key={item.service_id} className="p-4 border-2 border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.service_name}</p>
-                        <div className="mt-2 flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 text-lg">{item.service_name}</p>
+                        <div className="mt-3 flex items-center gap-3">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -488,15 +497,15 @@ export default function InvoiceModal({
                             onChange={(e) =>
                               handleUpdatePrice(item.service_id, parseFloat(e.target.value) || 0)
                             }
-                            className="w-24 ml-4"
+                            className="w-28 ml-4 text-base font-medium"
                             step="0.01"
                             min="0"
                           />
-                          <span className="text-gray-600 ml-2">₺</span>
+                          <span className="text-gray-600 ml-2 font-medium">₺</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">
+                      <div className="text-right ml-4">
+                        <p className="text-2xl font-bold text-blue-600">
                           {item.total_price.toFixed(2)} ₺
                         </p>
                         <Button
@@ -528,27 +537,27 @@ export default function InvoiceModal({
         {step === 'staff' && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Personel Seçimi</h3>
-            <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto">
+            <div className="grid grid-cols-3 gap-3 max-h-96 overflow-y-auto p-2">
               {staffList.map((staff) => (
                 <button
                   key={staff.id}
                   onClick={() => handleToggleStaff(staff.id)}
                   className={`rounded-lg border-2 p-4 text-left transition-all ${
                     selectedStaff.has(staff.id)
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900">{staff.full_name}</p>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">{staff.full_name}</p>
                       {staff.phone && (
-                        <p className="text-sm text-gray-600">{staff.phone}</p>
+                        <p className="text-sm text-gray-600 mt-1">{staff.phone}</p>
                       )}
                     </div>
                     {selectedStaff.has(staff.id) && (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
-                        <Users className="h-4 w-4" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white ml-3 flex-shrink-0">
+                        <Users className="h-5 w-5" />
                       </div>
                     )}
                   </div>
@@ -608,31 +617,31 @@ export default function InvoiceModal({
               </div>
             </div>
 
-            <div className="space-y-2 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Ara Toplam:</span>
-                <span className="font-semibold text-gray-900">{subtotal.toFixed(2)} ₺</span>
+            <div className="space-y-3 pt-4 border-t-2 border-gray-200">
+              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <span className="text-gray-700 font-medium">Ara Toplam:</span>
+                <span className="font-semibold text-gray-900 text-lg">{subtotal.toFixed(2)} ₺</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
                 <Input
                   type="number"
                   value={discountPercentage}
                   onChange={(e) =>
                     setDiscountPercentage(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))
                   }
-                  className="w-24"
+                  className="w-28 font-medium"
                   placeholder="%"
                   min="0"
                   max="100"
                 />
-                <span className="text-gray-600">İndirim:</span>
-                <span className="font-semibold text-red-600">
+                <span className="text-gray-700 font-medium">İndirim:</span>
+                <span className="font-semibold text-red-600 text-lg">
                   -{discountAmount.toFixed(2)} ₺
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-lg font-bold text-gray-900">Toplam:</span>
-                <span className="text-2xl font-bold text-blue-600">{total.toFixed(2)} ₺</span>
+              <div className="flex items-center justify-between pt-3 border-t-2 border-gray-300 bg-blue-50 p-4 rounded-lg">
+                <span className="text-xl font-bold text-gray-900">Toplam:</span>
+                <span className="text-3xl font-bold text-blue-600">{total.toFixed(2)} ₺</span>
               </div>
             </div>
           </div>

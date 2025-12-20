@@ -49,30 +49,30 @@ export default function Modal({
 
   const sizes = {
     sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    full: 'max-w-full mx-4',
+    md: 'max-w-2xl',
+    lg: 'max-w-5xl',
+    full: 'max-w-[95vw]',
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
       <div
         ref={modalRef}
         className={cn(
-          'w-full rounded-lg bg-white shadow-xl max-h-[90vh] flex flex-col',
+          'w-full rounded-lg bg-white shadow-2xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200',
           sizes[size]
         )}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 flex-shrink-0">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4 flex-shrink-0 rounded-t-lg">
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
             <button
               onClick={onClose}
-              className="cursor-pointer rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="cursor-pointer rounded-full p-2 text-gray-500 hover:bg-gray-200 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               aria-label="Close"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -80,7 +80,9 @@ export default function Modal({
         <div className={cn(
           title ? 'p-6' : 'p-6',
           'overflow-y-auto flex-1'
-        )}>{children}</div>
+        )} style={{ maxHeight: 'calc(90vh - 120px)' }}>
+          {children}
+        </div>
       </div>
     </div>,
     document.body
