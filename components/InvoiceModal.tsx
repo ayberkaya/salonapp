@@ -463,14 +463,17 @@ export default function InvoiceModal({
           </div>
           
           {showCustomerDropdown && !selectedCustomer && (customerSearch.length >= 2 || customers.length > 0) && (
-            <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-64 overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-gray-500">Aranıyor...</div>
               ) : customers.length > 0 ? (
                 customers.map((customer) => (
                   <button
                     key={customer.id}
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
                       setSelectedCustomer(customer)
                       setCustomerSearch('')
                       setShowCustomerDropdown(false)

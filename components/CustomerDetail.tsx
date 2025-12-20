@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle, Copy, Star, FileText } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle, Copy, Star, FileText, Receipt } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -22,11 +22,33 @@ type Visit = Database['public']['Tables']['visits']['Row'] & {
   profiles?: { full_name: string }
 }
 
+type Invoice = {
+  id: string
+  invoice_number: string
+  subtotal: number
+  discount_percentage: number
+  discount_amount: number
+  total_amount: number
+  created_at: string
+  invoice_items: Array<{
+    service_name: string
+    quantity: number
+    unit_price: number
+    total_price: number
+  }>
+  invoice_staff: Array<{
+    staff: {
+      full_name: string
+    }
+  }>
+}
+
 interface CustomerDetailProps {
   customer: Customer
   visits: Visit[]
   visitCount: number
   profile: Profile
+  invoices?: Invoice[]
 }
 
 export default function CustomerDetail({
@@ -34,6 +56,7 @@ export default function CustomerDetail({
   visits,
   visitCount,
   profile,
+  invoices = [],
 }: CustomerDetailProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -800,6 +823,87 @@ export default function CustomerDetail({
           </Card>
         )}
       </div>
+
+      {/* Invoice History */}
+      {invoices.length > 0 && (
+        <div className="mt-8">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">Adisyon Geçmişi</h2>
+            <Badge variant="default">{invoices.length} adisyon</Badge>
+          </div>
+          <div className="space-y-3">
+            {invoices.map((invoice) => {
+              const invoiceDate = new Date(invoice.created_at)
+              const isToday = invoiceDate.toDateString() === new Date().toDateString()
+              
+              return (
+                <Card key={invoice.id} className="p-4 transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Receipt className="h-5 w-5 text-blue-600" />
+                        <p className="font-semibold text-gray-900">{invoice.invoice_number}</p>
+                        <p className="text-sm text-gray-600">
+                          {invoiceDate.toLocaleDateString('tr-TR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                        {isToday && (
+                          <Badge variant="success" className="text-xs">Bugün</Badge>
+                        )}
+                      </div>
+                      
+                      {/* Services */}
+                      {invoice.invoice_items && invoice.invoice_items.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {invoice.invoice_items.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700">
+                                {item.service_name} {item.quantity > 1 && `x${item.quantity}`}
+                              </span>
+                              <span className="font-medium text-gray-900">
+                                {item.total_price.toFixed(2)} ₺
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Staff */}
+                      {invoice.invoice_staff && invoice.invoice_staff.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {invoice.invoice_staff.map((is, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {is.staff?.full_name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right ml-4">
+                      {invoice.discount_amount > 0 && (
+                        <p className="text-sm text-gray-500 line-through">
+                          {invoice.subtotal.toFixed(2)} ₺
+                        </p>
+                      )}
+                      <p className="text-xl font-bold text-green-600">
+                        {invoice.total_amount.toFixed(2)} ₺
+                      </p>
+                      {invoice.discount_percentage > 0 && (
+                        <p className="text-xs text-red-600">
+                          %{invoice.discount_percentage} indirim
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Service Select Modal */}
       {showServiceSelectModal && (

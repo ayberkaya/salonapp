@@ -45,6 +45,26 @@ export default async function CustomerDetailPage({
     .eq('customer_id', id)
     .eq('salon_id', profile.salon_id)
 
+  // Get invoices for this customer
+  const { data: invoices } = await supabase
+    .from('invoices')
+    .select(`
+      *,
+      invoice_items (
+        service_name,
+        quantity,
+        unit_price,
+        total_price
+      ),
+      invoice_staff (
+        staff (full_name)
+      )
+    `)
+    .eq('customer_id', id)
+    .eq('salon_id', profile.salon_id)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Nav profile={profile} />
@@ -54,6 +74,7 @@ export default async function CustomerDetailPage({
           visits={visits || []}
           visitCount={visitCount || 0}
           profile={profile}
+          invoices={invoices || []}
         />
       </div>
     </div>
