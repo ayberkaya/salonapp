@@ -289,8 +289,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
     }
   }
 
-  const hasSearchResults = searchQuery.length >= 2
-  const showRecent = !hasSearchResults && initialRecentCustomers.length > 0
+  const showRecent = initialRecentCustomers.length > 0
 
   return (
     <div className="space-y-6">
@@ -352,79 +351,6 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
           </button>
         </Card>
       </div>
-
-      {/* Search Section */}
-      <div className="space-y-4">
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-            <Search className="h-5 w-5 text-gray-400" />
-          </div>
-          <Input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Müşteri ara (isim veya telefon)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-14 pl-12 pr-12 text-base text-black"
-            autoFocus
-          />
-          {searchQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery('')
-                searchInputRef.current?.focus()
-              }}
-              className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              aria-label="Temizle"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
-        </div>
-
-        {hasSearchResults && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            {loading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
-                <span>Aranıyor...</span>
-              </>
-            ) : (
-              <span>
-                <strong>{searchResults.length}</strong> sonuç bulundu
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Search Results */}
-      {hasSearchResults && (
-        <div className="space-y-3">
-          {loading ? (
-            <>
-              <CustomerCardSkeleton />
-              <CustomerCardSkeleton />
-            </>
-          ) : searchResults.length > 0 ? (
-            searchResults.map((customer) => (
-              <CustomerCard
-                key={customer.id}
-                customer={customer}
-                onClick={() => handleCustomerClick(customer)}
-                onQuickVisit={(customer) => handleQuickVisit(customer)}
-              />
-            ))
-          ) : (
-            <Card className="p-12">
-              <EmptyState
-                title="Sonuç bulunamadı"
-                description="Farklı bir arama terimi deneyin"
-              />
-            </Card>
-          )}
-        </div>
-      )}
 
       {/* Recent Customers */}
       {showRecent && (
