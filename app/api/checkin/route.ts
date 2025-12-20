@@ -107,22 +107,9 @@ export async function POST(request: Request) {
 
     const customer = tokenData.customers as { id: string; phone: string; full_name: string }
 
-    // Check if customer already visited today (optional: prevent duplicate visits)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    const { data: todayVisits } = await supabase
-      .from('visits')
-      .select('id')
-      .eq('customer_id', customer.id)
-      .gte('visited_at', today.toISOString())
-
-    if (todayVisits && todayVisits.length > 0) {
-      return NextResponse.json(
-        { error: 'You have already checked in today' },
-        { status: 409 }
-      )
-    }
+    // Note: We allow multiple visits per day, but each visit is counted separately
+    // The system resets at midnight (00:00), so visits on different calendar days are all counted
+    // Example: Visit at 10 PM on 24th and 9 AM on 25th are both counted
 
     // Create visit record with services
     const { error: visitError } = await supabase
