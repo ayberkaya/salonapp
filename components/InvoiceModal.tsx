@@ -627,40 +627,40 @@ export default function InvoiceModal({
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Hizmet</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Personel</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700">Tutar</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700">İşlem</th>
+                    <th className="px-4 py-1.5 text-left text-xs font-semibold text-gray-700">Hizmet</th>
+                    <th className="px-4 py-1.5 text-left text-xs font-semibold text-gray-700">Personel</th>
+                    <th className="px-4 py-1.5 text-right text-xs font-semibold text-gray-700">Tutar</th>
+                    <th className="px-4 py-1.5 text-center text-xs font-semibold text-gray-700">İşlem</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {invoiceServices.map((service) => (
                     <tr key={service.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <td className="px-4 py-1.5 text-sm font-medium text-gray-900">
                         {service.service_name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-1.5 text-sm text-gray-600">
                         {service.staff_name || '-'}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-1.5 text-right">
                         <Input
                           type="number"
                           value={service.unit_price}
                           onChange={(e) =>
                             handleServicePriceChange(service.id, parseFloat(e.target.value) || 0)
                           }
-                          className="w-32 text-right font-semibold"
+                          className="w-32 text-right font-semibold text-sm"
                           step="0.01"
                           min="0"
                         />
-                        <span className="ml-2 text-sm text-gray-600">₺</span>
+                        <span className="ml-2 text-xs text-gray-600">₺</span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-1.5 text-center">
                         <button
                           onClick={() => handleRemoveService(service.id)}
-                          className="rounded-lg p-2 text-red-600 hover:bg-red-50 transition-colors"
+                          className="rounded-lg p-1 text-red-600 hover:bg-red-50 transition-colors"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </td>
                     </tr>
