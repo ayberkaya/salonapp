@@ -52,6 +52,7 @@ export type Database = {
           birth_day: number | null
           birth_month: number | null
           hair_color: string | null
+          notes: string | null
           kvkk_consent_at: string | null
           created_at: string
           last_visit_at: string | null
@@ -68,6 +69,7 @@ export type Database = {
           birth_day?: number | null
           birth_month?: number | null
           hair_color?: string | null
+          notes?: string | null
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           birth_day?: number | null
           birth_month?: number | null
           hair_color?: string | null
+          notes?: string | null
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null
