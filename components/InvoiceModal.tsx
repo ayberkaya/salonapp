@@ -715,20 +715,20 @@ export default function InvoiceModal({
         </div>
 
         {/* Totals */}
-        <div className="space-y-3 pt-4 border-t-2 border-gray-200">
-          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-            <span className="text-gray-700 font-medium">Ara Toplam:</span>
-            <span className="font-semibold text-gray-900 text-lg">{subtotal.toFixed(2)} ₺</span>
+        <div className="space-y-2 pt-4 border-t-2 border-gray-200">
+          <div className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+            <span className="text-gray-700 font-medium text-sm">Ara Toplam:</span>
+            <span className="font-semibold text-gray-900 text-base">{subtotal.toFixed(2)} ₺</span>
           </div>
           {discountAmount > 0 && (
-            <div className="flex items-center justify-between bg-red-50 p-3 rounded-lg">
-              <span className="text-gray-700 font-medium">İndirim:</span>
-              <span className="font-semibold text-red-600 text-lg">-{discountAmount.toFixed(2)} ₺</span>
+            <div className="flex items-center justify-between bg-red-50 p-2 rounded-lg">
+              <span className="text-gray-700 font-medium text-sm">İndirim:</span>
+              <span className="font-semibold text-red-600 text-base">-{discountAmount.toFixed(2)} ₺</span>
             </div>
           )}
-          <div className="flex items-center justify-between pt-3 border-t-2 border-gray-300 bg-blue-50 p-4 rounded-lg">
-            <span className="text-xl font-bold text-gray-900">Toplam:</span>
-            <span className="text-3xl font-bold text-blue-600">{total.toFixed(2)} ₺</span>
+          <div className="flex items-center justify-between pt-2 border-t-2 border-gray-300 bg-blue-50 p-3 rounded-lg">
+            <span className="text-lg font-bold text-gray-900">Toplam:</span>
+            <span className="text-2xl font-bold text-blue-600">{total.toFixed(2)} ₺</span>
           </div>
         </div>
 
