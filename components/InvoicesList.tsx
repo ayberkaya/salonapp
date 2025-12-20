@@ -258,53 +258,53 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card style={{ padding: '19.2px' }}>
+        <Card style={{ padding: '17.28px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Toplam Ciro</p>
-              <p className="mt-1.5 text-2xl font-bold text-gray-900">
+              <p className="mt-1.5 text-xl font-bold text-gray-900">
                 {totalRevenue.toFixed(2)} ₺
               </p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-              <DollarSign className="h-5 w-5 text-green-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
+              <DollarSign className="text-green-600" style={{ width: '18px', height: '18px' }} />
             </div>
           </div>
         </Card>
-        <Card style={{ padding: '19.2px' }}>
+        <Card style={{ padding: '17.28px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Bugünkü Ciro</p>
-              <p className="mt-1.5 text-2xl font-bold text-gray-900">
+              <p className="mt-1.5 text-xl font-bold text-gray-900">
                 {todayRevenue.toFixed(2)} ₺
               </p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
+              <TrendingUp className="text-blue-600" style={{ width: '18px', height: '18px' }} />
             </div>
           </div>
         </Card>
-        <Card style={{ padding: '19.2px' }}>
+        <Card style={{ padding: '17.28px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Toplam Adisyon</p>
-              <p className="mt-1.5 text-2xl font-bold text-gray-900">{invoiceCount}</p>
+              <p className="mt-1.5 text-xl font-bold text-gray-900">{invoiceCount}</p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-              <Receipt className="h-5 w-5 text-purple-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100">
+              <Receipt className="text-purple-600" style={{ width: '18px', height: '18px' }} />
             </div>
           </div>
         </Card>
-        <Card style={{ padding: '19.2px' }}>
+        <Card style={{ padding: '17.28px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Ortalama Adisyon</p>
-              <p className="mt-1.5 text-2xl font-bold text-gray-900">
+              <p className="mt-1.5 text-xl font-bold text-gray-900">
                 {invoiceCount > 0 ? (totalRevenue / invoiceCount).toFixed(2) : '0.00'} ₺
               </p>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
-              <Calendar className="h-5 w-5 text-orange-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100">
+              <Calendar className="text-orange-600" style={{ width: '18px', height: '18px' }} />
             </div>
           </div>
         </Card>
