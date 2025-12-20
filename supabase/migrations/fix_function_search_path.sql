@@ -19,6 +19,7 @@ $$ LANGUAGE plpgsql SET search_path = public;
 
 -- Fix calculate_loyalty_level function (if it exists)
 -- This function calculates loyalty level based on visit count
+DROP FUNCTION IF EXISTS calculate_loyalty_level(INTEGER);
 CREATE OR REPLACE FUNCTION calculate_loyalty_level(visit_count INTEGER)
 RETURNS TEXT AS $$
 BEGIN
@@ -35,11 +36,14 @@ END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
 -- Fix get_loyalty_discount function (if it exists)
+-- Drop existing function first to avoid parameter name conflicts
+DROP FUNCTION IF EXISTS get_loyalty_discount(TEXT);
+DROP FUNCTION IF EXISTS get_loyalty_discount(text);
 -- This function returns discount percentage for a loyalty level
-CREATE OR REPLACE FUNCTION get_loyalty_discount(level TEXT)
+CREATE OR REPLACE FUNCTION get_loyalty_discount(loyalty_level TEXT)
 RETURNS INTEGER AS $$
 BEGIN
-  CASE level
+  CASE loyalty_level
     WHEN 'PLATINUM' THEN RETURN 25;
     WHEN 'GOLD' THEN RETURN 20;
     WHEN 'SILVER' THEN RETURN 15;
@@ -50,6 +54,8 @@ END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
 -- Fix generate_referral_code function (if it exists)
+-- Drop existing function first
+DROP FUNCTION IF EXISTS generate_referral_code();
 -- This function generates a unique referral code
 CREATE OR REPLACE FUNCTION generate_referral_code()
 RETURNS TEXT AS $$
