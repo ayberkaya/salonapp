@@ -37,6 +37,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   const [showQuickVisitModal, setShowQuickVisitModal] = useState(false)
   const [showCustomerSelectModal, setShowCustomerSelectModal] = useState(false)
   const [showServiceSelectModal, setShowServiceSelectModal] = useState(false)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
   const [quickVisitCustomer, setQuickVisitCustomer] = useState<Customer | null>(null)
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const searchInputRef = useRef<HTMLInputElement>(null)
