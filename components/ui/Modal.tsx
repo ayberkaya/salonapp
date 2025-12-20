@@ -29,6 +29,11 @@ export default function Modal({
     }
 
     const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      // Don't close if clicking on a dropdown or its trigger
+      if (target.closest('[data-customer-dropdown]') || target.closest('[data-service-dropdown]')) {
+        return
+      }
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose()
       }
