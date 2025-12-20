@@ -275,19 +275,25 @@ export default function InvoiceModal({
   }
 
   const handleRemoveService = (serviceId: string) => {
+    // Find the service to remove
+    const serviceToRemove = invoiceServices.find(s => s.id === serviceId)
+    if (!serviceToRemove) return
+
+    // Remove from invoice services
     setInvoiceServices(prev => prev.filter(s => s.id !== serviceId))
+    
     // Also remove from service rows
-    setServiceRows(rows => rows.map(row => ({
-      ...row,
-      services: row.services.filter(s => {
-        const invoiceService = prev.find(is => is.service_id === s.id && is.staff_id === row.staff_id)
-        return invoiceService?.id !== serviceId
-      }),
-      service_ids: row.service_ids.filter(id => {
-        const invoiceService = prev.find(is => is.service_id === id && is.staff_id === row.staff_id)
-        return invoiceService?.id !== serviceId
-      })
-    })))
+    setServiceRows(rows => rows.map(row => {
+      // Check if this row contains the service to remove
+      if (row.staff_id === serviceToRemove.staff_id) {
+        return {
+          ...row,
+          services: row.services.filter(s => s.id !== serviceToRemove.service_id),
+          service_ids: row.service_ids.filter(id => id !== serviceToRemove.service_id)
+        }
+      }
+      return row
+    }))
   }
 
   const calculateTotals = () => {
