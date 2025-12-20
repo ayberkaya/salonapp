@@ -77,6 +77,7 @@ export default function InvoiceModal({
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false)
 
   // Services and Staff
   const [services, setServices] = useState<Service[]>([])
@@ -168,6 +169,120 @@ export default function InvoiceModal({
       setCustomers(data)
     }
     setLoading(false)
+  }
+
+  const handleCreateCustomer = async (name: string, phone: string) => {
+    if (!name.trim() || !phone.trim()) {
+      showToast('Lütfen ad soyad ve telefon numarası girin', 'error')
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Telefon formatını düzelt
+      const cleanPhone = phone.replace(/\D/g, '')
+      let formattedPhone = phone
+      
+      if (cleanPhone.length > 0) {
+        if (cleanPhone.startsWith('0')) {
+          formattedPhone = `+90${cleanPhone.slice(1)}`
+        } else if (cleanPhone.length === 10) {
+          formattedPhone = `+90${cleanPhone}`
+        } else if (cleanPhone.length === 11 && cleanPhone.startsWith('90')) {
+          formattedPhone = `+${cleanPhone}`
+        } else if (!phone.startsWith('+')) {
+          formattedPhone = `+90${cleanPhone}`
+        }
+      }
+
+      const capitalizeWords = (str: string) => {
+        return str
+          .toLowerCase()
+          .trim()
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      }
+
+      const { data, error } = await supabase
+        .from('customers')
+        .insert({
+          salon_id: salonId,
+          full_name: capitalizeWords(name),
+          phone: formattedPhone,
+          kvkk_consent_at: new Date().toISOString(),
+          has_welcome_discount: true,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        if (error.code === '23505') {
+          showToast('Bu telefon numarası zaten kayıtlı', 'error')
+          // Kayıtlı müşteriyi bul ve seç
+          const { data: existingCustomer } = await supabase
+            .from('customers')
+            .select('id, full_name, phone')
+            .eq('salon_id', salonId)
+            .eq('phone', formattedPhone)
+            .single()
+          
+          if (existingCustomer) {
+            setSelectedCustomer(existingCustomer)
+            setCustomerSearch('')
+            setShowCustomerDropdown(false)
+          }
+        } else {
+          showToast('Müşteri oluşturulurken hata oluştu', 'error')
+        }
+        return
+      }
+
+      if (data) {
+        setSelectedCustomer(data)
+        setCustomerSearch('')
+        setShowCustomerDropdown(false)
+        setShowCreateCustomerModal(false)
+        showToast('Müşteri başarıyla oluşturuldu', 'success')
+      }
+    } catch (err) {
+      console.error('Error creating customer:', err)
+      showToast('Beklenmeyen bir hata oluştu', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer) return
+
+    if (!confirm(`"${selectedCustomer.full_name}" müşterisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', selectedCustomer.id)
+        .eq('salon_id', salonId)
+
+      if (error) {
+        console.error('Error deleting customer:', error)
+        showToast('Müşteri silinirken hata oluştu', 'error')
+        return
+      }
+
+      setSelectedCustomer(null)
+      setCustomerSearch('')
+      showToast('Müşteri başarıyla silindi', 'success')
+    } catch (err) {
+      console.error('Error deleting customer:', err)
+      showToast('Beklenmeyen bir hata oluştu', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleAddServiceRow = () => {
@@ -326,10 +441,6 @@ export default function InvoiceModal({
   }
 
   const handleSave = async () => {
-    if (!selectedCustomer) {
-      showToast('Lütfen müşteri seçin', 'error')
-      return
-    }
     if (invoiceServices.length === 0) {
       showToast('Lütfen en az bir hizmet ekleyin', 'error')
       return
@@ -351,7 +462,7 @@ export default function InvoiceModal({
         .from('invoices')
         .insert({
           salon_id: salonId,
-          customer_id: selectedCustomer.id,
+          customer_id: selectedCustomer?.id || null,
           invoice_number: invoiceNumber,
           subtotal: subtotal.toFixed(2),
           discount_percentage: discountType === 'percentage' ? discountPercentage : 0,
@@ -438,6 +549,7 @@ export default function InvoiceModal({
   const { subtotal, discountAmount, total } = calculateTotals()
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Adisyon" size="lg">
       <div className="space-y-6">
         {/* Customer Selection */}
@@ -515,7 +627,25 @@ export default function InvoiceModal({
                   ))}
                 </div>
               ) : customerSearch.length >= 2 ? (
-                <div className="p-4 text-center text-gray-500">Müşteri bulunamadı</div>
+                <div className="p-4">
+                  <div className="text-center text-gray-500 mb-3">Müşteri bulunamadı</div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setShowCreateCustomerModal(true)
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    className="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Yeni müşteri ekle
+                  </button>
+                </div>
               ) : null}
             </div>
           )}
@@ -527,6 +657,18 @@ export default function InvoiceModal({
                   <p className="font-medium text-gray-900">{selectedCustomer.full_name}</p>
                   <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleDeleteCustomer()
+                  }}
+                  className="rounded-lg p-1.5 text-red-600 hover:bg-red-100 transition-colors"
+                  title="Müşteriyi sil"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </Card>
           )}
@@ -616,7 +758,7 @@ export default function InvoiceModal({
             className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 h-9 text-sm"
           >
             <Plus className="mr-2 h-3.5 w-3.5" />
-            Bir hizmet daha ekle
+            Personel/Hizmet ekle
           </Button>
         </div>
 
@@ -745,13 +887,109 @@ export default function InvoiceModal({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saving || !selectedCustomer || invoiceServices.length === 0}
+            disabled={saving || invoiceServices.length === 0}
             className="flex-1 bg-green-600 hover:bg-green-700 h-9 text-sm"
           >
             {saving ? 'Kaydediliyor...' : 'Adisyonu Kaydet'}
           </Button>
         </div>
       </div>
+    </Modal>
+    {showCreateCustomerModal && (
+      <CreateCustomerModal
+        onClose={() => setShowCreateCustomerModal(false)}
+        onCreate={handleCreateCustomer}
+        initialName={customerSearch}
+      />
+    )}
+    </>
+  )
+}
+
+function CreateCustomerModal({
+  onClose,
+  onCreate,
+  initialName = '',
+}: {
+  onClose: () => void
+  onCreate: (name: string, phone: string) => void
+  initialName?: string
+}) {
+  const [name, setName] = useState(initialName)
+  const [phone, setPhone] = useState('')
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (name && phone && phone.length === 10) {
+      onCreate(name, phone)
+    }
+  }
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Yeni Müşteri Ekle">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Ad Soyad <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="text"
+            required
+            value={name}
+            onChange={(e) => {
+              const value = e.target.value
+              // Her kelimenin ilk harfini büyük yap
+              const capitalized = value
+                .toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+              setName(capitalized)
+            }}
+            autoFocus
+            placeholder="Örn: Ahmet Yılmaz"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Telefon <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base text-gray-500">
+              +90
+            </span>
+            <Input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => {
+                // Sadece rakamları kabul et ve maksimum 10 karakter
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                setPhone(value)
+              }}
+              placeholder="5551234567"
+              className="pl-12"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            className="flex-1 h-9 text-sm"
+          >
+            İptal
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 h-9 text-sm"
+            disabled={!name.trim() || phone.length !== 10}
+          >
+            Müşteri Oluştur
+          </Button>
+        </div>
+      </form>
     </Modal>
   )
 }
