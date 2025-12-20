@@ -274,9 +274,13 @@ export default function InvoiceModal({
         return
       }
 
+      // Dispatch event to update recent customers in HomeSearch
+      window.dispatchEvent(new CustomEvent('customerDeleted', { detail: { customerId: selectedCustomer.id } }))
+      
       setSelectedCustomer(null)
       setCustomerSearch('')
       showToast('Müşteri başarıyla silindi', 'success')
+      router.refresh()
     } catch (err) {
       console.error('Error deleting customer:', err)
       showToast('Beklenmeyen bir hata oluştu', 'error')

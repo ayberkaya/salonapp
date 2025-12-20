@@ -33,6 +33,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
+  const [recentCustomers, setRecentCustomers] = useState<Customer[]>(initialRecentCustomers)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showQuickVisitModal, setShowQuickVisitModal] = useState(false)
   const [showCustomerSelectModal, setShowCustomerSelectModal] = useState(false)
@@ -291,45 +292,58 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
     }
   }
 
-  const showRecent = initialRecentCustomers.length > 0
+  const showRecent = recentCustomers.length > 0
+
+  // Listen for customer deletion events
+  useEffect(() => {
+    const handleCustomerDeleted = (event: CustomEvent<{ customerId: string }>) => {
+      setRecentCustomers(prev => prev.filter(c => c.id !== event.detail.customerId))
+    }
+
+    window.addEventListener('customerDeleted' as any, handleCustomerDeleted as EventListener)
+    return () => {
+      window.removeEventListener('customerDeleted' as any, handleCustomerDeleted as EventListener)
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Card className="p-6">
+        <Card style={{ padding: '16.8px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Bugünkü Ziyaretler</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{todayVisits}</p>
+              <p className="text-xs font-medium text-gray-600">Bugünkü Ziyaretler</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">{todayVisits}</p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Calendar className="h-6 w-6 text-blue-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
+              <Calendar className="h-5 w-5 text-blue-600" />
             </div>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card style={{ padding: '16.8px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Toplam Müşteri</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{initialRecentCustomers.length}</p>
+              <p className="text-xs font-medium text-gray-600">Toplam Müşteri</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">{recentCustomers.length}</p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <Users className="h-6 w-6 text-green-600" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
+              <Users className="h-5 w-5 text-green-600" />
             </div>
           </div>
         </Card>
         <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="relative flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 p-8 text-white transition-all duration-300 hover:from-blue-700 hover:via-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="relative flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white transition-all duration-300 hover:from-blue-700 hover:via-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            style={{ padding: '22.4px' }}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
-              <Plus className="h-7 w-7" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+              <Plus className="h-5 w-5" />
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold">Yeni Müşteri</p>
-              <p className="mt-1 text-sm text-blue-100">Hızlı kayıt</p>
+              <p className="text-lg font-bold">Yeni Müşteri</p>
+              <p className="mt-0.5 text-xs text-blue-100">Hızlı kayıt</p>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
           </button>
@@ -340,14 +354,15 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
               // Her zaman müşteri seçim modalını aç
               handleQuickVisit()
             }}
-            className="relative flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-700 via-gray-600 to-gray-800 p-8 text-white transition-all duration-300 hover:from-gray-800 hover:via-gray-700 hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="relative flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-700 via-gray-600 to-gray-800 text-white transition-all duration-300 hover:from-gray-800 hover:via-gray-700 hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            style={{ padding: '22.4px' }}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
-              <Clock className="h-7 w-7" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+              <Clock className="h-5 w-5" />
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold">Hızlı Ziyaret</p>
-              <p className="mt-1 text-sm text-gray-300">Anında başlat</p>
+              <p className="text-lg font-bold">Hızlı Ziyaret</p>
+              <p className="mt-0.5 text-xs text-gray-300">Anında başlat</p>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
           </button>
@@ -355,14 +370,15 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
         <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
           <button
             onClick={() => setShowInvoiceModal(true)}
-            className="relative flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-green-600 via-green-500 to-emerald-600 p-8 text-white transition-all duration-300 hover:from-green-700 hover:via-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            className="relative flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-green-600 via-green-500 to-emerald-600 text-white transition-all duration-300 hover:from-green-700 hover:via-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            style={{ padding: '22.4px' }}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
-              <Receipt className="h-7 w-7" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+              <Receipt className="h-5 w-5" />
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold">Adisyon Ekle</p>
-              <p className="mt-1 text-sm text-green-100">Hesap oluştur</p>
+              <p className="text-lg font-bold">Adisyon Ekle</p>
+              <p className="mt-0.5 text-xs text-green-100">Hesap oluştur</p>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
           </button>
@@ -374,10 +390,10 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
         <div>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-semibold text-gray-900">Son Müşteriler</h2>
-            <Badge variant="default">{initialRecentCustomers.length} müşteri</Badge>
+            <Badge variant="default">{recentCustomers.length} müşteri</Badge>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {initialRecentCustomers.map((customer) => (
+            {recentCustomers.map((customer) => (
               <CustomerCard
                 key={customer.id}
                 customer={customer}
@@ -400,7 +416,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
       {/* Customer Select Modal */}
       {showCustomerSelectModal && (
         <CustomerSelectModal
-          customers={searchResults.length > 0 ? searchResults : initialRecentCustomers}
+          customers={searchResults.length > 0 ? searchResults : recentCustomers}
           onSelect={(customer) => {
             setShowCustomerSelectModal(false)
             handleQuickVisit(customer)
@@ -474,39 +490,39 @@ function CustomerCard({
     : null
 
   return (
-    <Card className="group cursor-pointer p-5 transition-all hover:shadow-lg hover:scale-[1.02]">
+    <Card className="group cursor-pointer p-3.5 transition-all hover:shadow-lg hover:scale-[1.02]">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0" onClick={onClick}>
-          <h3 className="text-lg font-semibold text-gray-900 truncate">{customer.full_name}</h3>
-          <p className="mt-1 text-sm text-gray-600">{customer.phone}</p>
+          <h3 className="text-base font-semibold text-gray-900 truncate">{customer.full_name}</h3>
+          <p className="mt-0.5 text-sm text-gray-600">{customer.phone}</p>
           {lastVisitDate && (
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500">
               Son ziyaret: {lastVisitDate}
             </p>
           )}
           {!lastVisitDate && (
-            <Badge variant="warning" className="mt-2 text-xs">Yeni</Badge>
+            <Badge variant="warning" className="mt-1 text-xs">Yeni</Badge>
           )}
         </div>
-        <div className="ml-3 flex flex-col gap-2">
+        <div className="ml-2 flex flex-col gap-1.5">
           <button
             onClick={(e) => {
               e.stopPropagation()
               // Direkt bu müşteri ile işlem seçimine geç
               onQuickVisit(customer)
             }}
-            className="cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="cursor-pointer rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
-            <Clock className="h-4 w-4" />
+            <Clock className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation()
               onClick()
             }}
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>

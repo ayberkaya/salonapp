@@ -28,13 +28,13 @@ export default async function HomePage() {
     .eq('salon_id', profile.salon_id)
     .gte('visited_at', today.toISOString())
 
-  // Get recent customers (last 10)
+  // Get recent customers (last 3)
   const { data: recentCustomers } = await supabase
     .from('customers')
     .select('*')
     .eq('salon_id', profile.salon_id)
     .order('last_visit_at', { ascending: false, nullsFirst: false })
-    .limit(10)
+    .limit(3)
 
   return (
     <div className="min-h-screen bg-gray-50">

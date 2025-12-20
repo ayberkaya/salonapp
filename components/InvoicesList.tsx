@@ -258,65 +258,65 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-6">
+        <Card style={{ padding: '19.2px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Toplam Ciro</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className="text-xs font-medium text-gray-600">Toplam Ciro</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">
                 {totalRevenue.toFixed(2)} ₺
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <DollarSign className="h-6 w-6 text-green-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+              <DollarSign className="h-5 w-5 text-green-600" />
             </div>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card style={{ padding: '19.2px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Bugünkü Ciro</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className="text-xs font-medium text-gray-600">Bugünkü Ciro</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">
                 {todayRevenue.toFixed(2)} ₺
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
             </div>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card style={{ padding: '19.2px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Toplam Adisyon</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">{invoiceCount}</p>
+              <p className="text-xs font-medium text-gray-600">Toplam Adisyon</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">{invoiceCount}</p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
-              <Receipt className="h-6 w-6 text-purple-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100">
+              <Receipt className="h-5 w-5 text-purple-600" />
             </div>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card style={{ padding: '19.2px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Ortalama Adisyon</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
+              <p className="text-xs font-medium text-gray-600">Ortalama Adisyon</p>
+              <p className="mt-1.5 text-2xl font-bold text-gray-900">
                 {invoiceCount > 0 ? (totalRevenue / invoiceCount).toFixed(2) : '0.00'} ₺
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-              <Calendar className="h-6 w-6 text-orange-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
+              <Calendar className="h-5 w-5 text-orange-600" />
             </div>
           </div>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div className="flex flex-col gap-4 sm:flex-row">
+      <Card style={{ padding: '19.2px' }}>
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className="h-4 w-4 text-gray-400" />
               </div>
               <Input
                 type="text"
@@ -324,13 +324,15 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 text-black"
+                style={{ paddingTop: '6.48px', paddingBottom: '6.48px' }}
               />
             </div>
             <div className="flex gap-2">
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value as any)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 px-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ paddingTop: '5.4px', paddingBottom: '5.4px' }}
               >
                 <option value="all">Tüm Zamanlar</option>
                 <option value="today">Bugün</option>
@@ -340,7 +342,8 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
               <select
                 value={staffFilter}
                 onChange={(e) => setStaffFilter(e.target.value)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-lg border border-gray-300 px-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ paddingTop: '5.4px', paddingBottom: '5.4px' }}
               >
                 <option value="all">Tüm Personel</option>
                 {staffList.map((staff) => (

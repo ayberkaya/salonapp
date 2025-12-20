@@ -56,8 +56,12 @@ export default function CustomersList({
         return
       }
 
+      // Dispatch event to update recent customers in HomeSearch
+      window.dispatchEvent(new CustomEvent('customerDeleted', { detail: { customerId } }))
+      
       setCustomers(customers.filter(c => c.id !== customerId))
       showToast('Müşteri başarıyla silindi', 'success')
+      router.refresh()
     } catch (err) {
       console.error('Error deleting customer:', err)
       showToast('Beklenmeyen bir hata oluştu', 'error')
