@@ -93,6 +93,10 @@ export default function InvoiceModal({
   const [discountType, setDiscountType] = useState<'none' | 'percentage' | 'code'>('none')
   const [discountPercentage, setDiscountPercentage] = useState(0)
   const [discountCode, setDiscountCode] = useState('')
+  const [appliedDiscountCode, setAppliedDiscountCode] = useState<{
+    code: string
+    percentage: number
+  } | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -466,15 +470,75 @@ export default function InvoiceModal({
     }))
   }
 
+  const handleApplyDiscountCode = async () => {
+    if (!discountCode.trim()) {
+      showToast('Lütfen bir indirim kodu girin', 'error')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('discount_codes')
+        .select('*')
+        .eq('salon_id', salonId)
+        .eq('code_name', discountCode.toUpperCase().trim())
+        .eq('is_active', true)
+        .single()
+
+      if (error || !data) {
+        showToast('Geçersiz indirim kodu', 'error')
+        setAppliedDiscountCode(null)
+        return
+      }
+
+      // Check validity dates
+      const currentDate = new Date()
+      const validFrom = new Date(data.valid_from)
+      const validUntil = new Date(data.valid_until)
+
+      if (currentDate < validFrom || currentDate > validUntil) {
+        showToast('Bu indirim kodu geçerli değil veya süresi dolmuş', 'error')
+        setAppliedDiscountCode(null)
+        return
+      }
+
+      // Check if code has customer restriction
+      if (data.customer_id && (!selectedCustomer || data.customer_id !== selectedCustomer.id)) {
+        showToast('Bu indirim kodu sadece belirli bir müşteri için geçerlidir', 'error')
+        setAppliedDiscountCode(null)
+        return
+      }
+
+      // Check usage limit
+      if (data.max_usage && data.usage_count >= data.max_usage) {
+        showToast('Bu indirim kodu kullanım limitine ulaşmış', 'error')
+        setAppliedDiscountCode(null)
+        return
+      }
+
+      setAppliedDiscountCode({
+        code: data.code_name,
+        percentage: data.discount_percentage,
+      })
+      showToast(`İndirim kodu uygulandı: %${data.discount_percentage} indirim`, 'success')
+    } catch (err) {
+      console.error('Error applying discount code:', err)
+      showToast('İndirim kodu uygulanırken hata oluştu', 'error')
+      setAppliedDiscountCode(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const calculateTotals = () => {
     const subtotal = invoiceServices.reduce((sum, item) => sum + item.total_price, 0)
     let discountAmount = 0
     
     if (discountType === 'percentage') {
       discountAmount = subtotal * (discountPercentage / 100)
-    } else if (discountType === 'code') {
-      // TODO: Implement discount code lookup
-      discountAmount = 0
+    } else if (discountType === 'code' && appliedDiscountCode) {
+      discountAmount = subtotal * (appliedDiscountCode.percentage / 100)
     }
     
     const total = subtotal - discountAmount
@@ -639,6 +703,7 @@ export default function InvoiceModal({
     setDiscountType('none')
     setDiscountPercentage(0)
     setDiscountCode('')
+    setAppliedDiscountCode(null)
     setShowCustomerDropdown(false)
     onClose()
   }
@@ -673,7 +738,7 @@ export default function InvoiceModal({
                 }
               }}
               className="pl-10 text-black"
-              style={{ paddingTop: '9.6px', paddingBottom: '9.6px' }}
+              style={{ paddingTop: '7.68px', paddingBottom: '7.68px' }}
             />
             {selectedCustomer && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -943,13 +1008,27 @@ export default function InvoiceModal({
             )}
             
             {discountType === 'code' && (
-              <Input
-                type="text"
-                value={discountCode}
-                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                className="flex-1 text-sm"
-                placeholder="İndirim kodu girin"
-              />
+              <div className="flex-1 flex items-center gap-2">
+                <Input
+                  type="text"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                  className="flex-1 text-sm"
+                  placeholder="İndirim kodu girin"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleApplyDiscountCode()
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleApplyDiscountCode}
+                  size="sm"
+                  className="whitespace-nowrap"
+                >
+                  Uygula
+                </Button>
+              </div>
             )}
           </div>
         </div>

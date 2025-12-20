@@ -70,7 +70,7 @@ export default function Toast({
 // Toast Container for managing multiple toasts
 export function ToastContainer({ toasts, removeToast }: { toasts: Array<{ id: string; message: string; type: ToastType }>; removeToast: (id: string) => void }) {
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 items-center w-full max-w-md px-4">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
