@@ -649,7 +649,7 @@ export default function InvoiceModal({
                           onChange={(e) =>
                             handleServicePriceChange(service.id, parseFloat(e.target.value) || 0)
                           }
-                          className="w-32 text-right font-semibold text-sm"
+                          className="w-32 text-right font-semibold text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                           step="0.01"
                           min="0"
                         />
