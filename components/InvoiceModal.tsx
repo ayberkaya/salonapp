@@ -558,6 +558,62 @@ export default function InvoiceModal({
         }
       }
 
+      // If customer is selected, record visit and update loyalty
+      if (selectedCustomer) {
+        // Create visit record
+        const { error: visitError } = await supabase
+          .from('visits')
+          .insert({
+            salon_id: salonId,
+            customer_id: selectedCustomer.id,
+            created_by: profileId,
+            visited_at: new Date().toISOString(),
+          })
+
+        if (visitError) {
+          console.error('Visit creation error:', visitError)
+          // Don't fail the invoice creation if visit recording fails
+          // Just log the error
+        } else {
+          // Update customer last_visit_at
+          await supabase
+            .from('customers')
+            .update({ last_visit_at: new Date().toISOString() })
+            .eq('id', selectedCustomer.id)
+
+          // Calculate new visit count
+          const { count: newVisitCount } = await supabase
+            .from('visits')
+            .select('*', { count: 'exact', head: true })
+            .eq('customer_id', selectedCustomer.id)
+
+          // Update loyalty level based on visit count
+          if (newVisitCount !== null) {
+            const newLevel = newVisitCount >= 30 ? 'PLATINUM' :
+                             newVisitCount >= 20 ? 'GOLD' :
+                             newVisitCount >= 10 ? 'SILVER' : 'BRONZE'
+            
+            // Check if level changed
+            const { data: currentCustomer } = await supabase
+              .from('customers')
+              .select('loyalty_level')
+              .eq('id', selectedCustomer.id)
+              .single()
+            
+            if (currentCustomer?.loyalty_level !== newLevel) {
+              // Level up! Give discount
+              await supabase
+                .from('customers')
+                .update({
+                  loyalty_level: newLevel,
+                  has_loyalty_discount: true, // Yeni seviyeye geçince indirim hakkı ver
+                })
+                .eq('id', selectedCustomer.id)
+            }
+          }
+        }
+      }
+
       showToast('Adisyon başarıyla oluşturuldu', 'success')
       handleClose()
       router.refresh()

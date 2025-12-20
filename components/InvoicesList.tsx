@@ -8,8 +8,9 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
-import { Receipt, Search, Filter, Calendar, TrendingUp, Users, DollarSign } from 'lucide-react'
+import { Receipt, Search, Filter, Calendar, TrendingUp, Users, DollarSign, Plus } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
+import InvoiceModal from '@/components/InvoiceModal'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -60,6 +61,9 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [todayRevenue, setTodayRevenue] = useState(0)
   const [invoiceCount, setInvoiceCount] = useState(0)
+
+  // Invoice Modal
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
 
   useEffect(() => {
     loadInvoices()
@@ -254,6 +258,10 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
           <h1 className="text-3xl font-bold text-gray-900">Adisyonlar</h1>
           <p className="mt-1 text-gray-600">Tüm adisyonları görüntüleyin ve yönetin</p>
         </div>
+        <Button onClick={() => setShowInvoiceModal(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Yeni Adisyon Ekle
+        </Button>
       </div>
 
       {/* Statistics Cards */}
@@ -451,6 +459,19 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
           </div>
         )}
       </Card>
+
+      {/* Invoice Modal */}
+      <InvoiceModal
+        isOpen={showInvoiceModal}
+        onClose={() => {
+          setShowInvoiceModal(false)
+          loadInvoices()
+          loadStatistics()
+          loadStaffRevenue()
+        }}
+        salonId={profile.salon_id}
+        profileId={profile.id}
+      />
     </div>
   )
 }
