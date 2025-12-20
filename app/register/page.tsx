@@ -121,11 +121,7 @@ function RegisterForm() {
       if (data) {
         setSuccess(true)
         showToast('Kayıt başarıyla tamamlandı! %15 hoş geldin indirimi kazandınız.', 'success')
-        
-        // 3 saniye sonra ana sayfaya yönlendir
-        setTimeout(() => {
-          router.push('/')
-        }, 3000)
+        // Müşteri login olmadan kayıt yapabilir, yönlendirme yapmıyoruz
       }
     } catch (err) {
       console.error('Registration error:', err)
@@ -176,7 +172,7 @@ function RegisterForm() {
             Hoş geldiniz! %15 hoş geldin indirimi kazandınız.
           </p>
           <p className="text-sm text-gray-500">
-            Ana sayfaya yönlendiriliyorsunuz...
+            Kaydınız tamamlandı. Artık QR kod okutarak ziyaretlerinizi onaylayabilirsiniz.
           </p>
         </Card>
       </div>

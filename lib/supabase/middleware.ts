@@ -10,8 +10,8 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Allow checkin and login pages to work even without env vars
-    if (request.nextUrl.pathname.startsWith('/checkin') || request.nextUrl.pathname.startsWith('/login')) {
+    // Allow checkin, login, and register pages to work even without env vars
+    if (request.nextUrl.pathname.startsWith('/checkin') || request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register')) {
       return supabaseResponse
     }
     // For other pages, show an error page
@@ -54,6 +54,7 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/checkin') &&
+    !request.nextUrl.pathname.startsWith('/register') &&
     !request.nextUrl.pathname.startsWith('/api') &&
     !request.nextUrl.pathname.startsWith('/debug')
   ) {
