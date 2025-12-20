@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays, startOfDay, setHours, setMinutes } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays, startOfDay, setHours, setMinutes, isPast, isToday } from 'date-fns'
 import { tr } from 'date-fns/locale/tr'
 
 type Appointment = {
@@ -207,7 +207,12 @@ export default function AppointmentCalendar({
   }
 
   const today = new Date()
-  const isToday = (date: Date) => isSameDay(date, today)
+  const isTodayDate = (date: Date) => isSameDay(date, today)
+  const isPastDate = (date: Date) => {
+    const dateStart = startOfDay(date)
+    const todayStart = startOfDay(today)
+    return dateStart < todayStart
+  }
 
   const dayStaff = viewType === 'day' ? getStaffForDay(selectedDay) : []
 
@@ -310,18 +315,22 @@ export default function AppointmentCalendar({
           {days.map((day, dayIdx) => {
             const dayAppointments = getAppointmentsForDate(day)
             const isCurrentMonth = isSameMonth(day, currentMonth)
-            const isTodayDate = isToday(day)
+            const isTodayDay = isTodayDate(day)
+            const isPast = isPastDate(day)
 
             return (
               <div
                 key={dayIdx}
                 className={`
-                  min-h-[100px] border-2 rounded-lg p-2 cursor-pointer transition-all
+                  min-h-[100px] border-2 rounded-lg p-2 transition-all
                   ${isCurrentMonth ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50'}
-                  ${isTodayDate ? 'border-blue-400 bg-blue-50' : ''}
-                  hover:border-blue-300 hover:bg-blue-50
+                  ${isTodayDay ? 'border-blue-400 bg-blue-50' : ''}
+                  ${isPast ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300 hover:bg-blue-50'}
                 `}
                 onClick={() => {
+                  if (isPast) {
+                    return // Geçmiş tarihlere tıklamayı engelle
+                  }
                   if (viewType === 'month') {
                     setSelectedDay(day)
                     setViewType('day')
@@ -334,7 +343,8 @@ export default function AppointmentCalendar({
                   className={`
                     text-sm font-medium mb-1
                     ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
-                    ${isTodayDate ? 'text-blue-600 font-bold' : ''}
+                    ${isTodayDay ? 'text-blue-600 font-bold' : ''}
+                    ${isPast ? 'text-gray-400' : ''}
                   `}
                 >
                   {format(day, 'd')}
@@ -461,12 +471,21 @@ export default function AppointmentCalendar({
                             return true
                           })
                           
+                          const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
+                          const isPastTime = clickDate < new Date()
+
                           return (
                             <div
                               key={staff.id}
-                              className="border border-gray-200 p-1 min-h-[30px] bg-white hover:bg-gray-50 cursor-pointer transition-colors relative"
+                              className={`border border-gray-200 p-1 min-h-[30px] relative transition-colors ${
+                                isPastTime 
+                                  ? 'bg-gray-50 opacity-50 cursor-not-allowed' 
+                                  : 'bg-white hover:bg-gray-50 cursor-pointer'
+                              }`}
                               onClick={() => {
-                                const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
+                                if (isPastTime) {
+                                  return // Geçmiş saatlere tıklamayı engelle
+                                }
                                 onDateClick(clickDate, staff.id)
                               }}
                             >
@@ -505,13 +524,24 @@ export default function AppointmentCalendar({
                         )
                       })
                     ) : (
-                      <div
-                        className="border border-gray-200 p-1 min-h-[30px] bg-white hover:bg-gray-50 cursor-pointer transition-colors relative"
-                        onClick={() => {
-                          const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
-                          onDateClick(clickDate, undefined)
-                        }}
-                      >
+                      (() => {
+                        const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
+                        const isPastTime = clickDate < new Date()
+                        
+                        return (
+                          <div
+                            className={`border border-gray-200 p-1 min-h-[30px] relative transition-colors ${
+                              isPastTime 
+                                ? 'bg-gray-50 opacity-50 cursor-not-allowed' 
+                                : 'bg-white hover:bg-gray-50 cursor-pointer'
+                            }`}
+                            onClick={() => {
+                              if (isPastTime) {
+                                return // Geçmiş saatlere tıklamayı engelle
+                              }
+                              onDateClick(clickDate, undefined)
+                            }}
+                          >
                         {/* Show appointments without staff */}
                         {getAppointmentsForDate(selectedDay).filter((apt) => {
                           const aptDate = new Date(apt.appointment_date)
@@ -551,7 +581,9 @@ export default function AppointmentCalendar({
                             </div>
                           )
                         })}
-                      </div>
+                        </div>
+                        )
+                      })()
                     )}
                     </div>
                   )
