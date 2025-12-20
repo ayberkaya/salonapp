@@ -65,21 +65,21 @@ CREATE POLICY "Owners can create templates"
   ON campaign_templates FOR INSERT
   WITH CHECK (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 CREATE POLICY "Owners can update templates"
   ON campaign_templates FOR UPDATE
   USING (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 CREATE POLICY "Owners can delete templates"
   ON campaign_templates FOR DELETE
   USING (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 -- Campaigns policies
@@ -91,21 +91,21 @@ CREATE POLICY "Owners can create campaigns"
   ON campaigns FOR INSERT
   WITH CHECK (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 CREATE POLICY "Owners can update campaigns"
   ON campaigns FOR UPDATE
   USING (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 CREATE POLICY "Owners can delete campaigns"
   ON campaigns FOR DELETE
   USING (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 -- Campaign Recipients policies

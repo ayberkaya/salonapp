@@ -79,16 +79,12 @@ ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visit_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
--- Users can view their own profile
-CREATE POLICY "Users can view own profile"
-  ON profiles FOR SELECT
-  USING (auth.uid() = id);
-
--- Users can view profiles in their salon (using SECURITY DEFINER function to avoid recursion)
+-- Users can view their own profile OR profiles in their salon (merged for performance)
 CREATE POLICY "Users can view profiles in their salon"
   ON profiles FOR SELECT
   USING (
-    salon_id = get_user_salon_id()
+    (select auth.uid()) = id
+    OR salon_id = get_user_salon_id()
   );
 
 -- Salons policies
@@ -134,7 +130,7 @@ CREATE POLICY "Staff and owners can create visits"
   ON visits FOR INSERT
   WITH CHECK (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 -- Visit tokens policies
@@ -150,7 +146,7 @@ CREATE POLICY "Staff and owners can create visit tokens"
   ON visit_tokens FOR INSERT
   WITH CHECK (
     salon_id = get_user_salon_id()
-    AND created_by = auth.uid()
+    AND created_by = (select auth.uid())
   );
 
 -- Anyone can update visit tokens (for customer check-in via API)
