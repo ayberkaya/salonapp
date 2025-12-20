@@ -34,6 +34,8 @@ type Appointment = {
 type Staff = {
   id: string
   full_name: string
+  work_start_time: string | null
+  work_end_time: string | null
 }
 
 interface AppointmentCalendarProps {
@@ -114,9 +116,13 @@ export default function AppointmentCalendar({
       apt.appointment_staff.forEach((as: any) => {
         if (as.staff_id && as.staff?.full_name) {
           if (!staffMap.has(as.staff_id)) {
+            // Find staff from staffList to get working hours
+            const staffFromList = staffList.find(s => s.id === as.staff_id)
             staffMap.set(as.staff_id, {
               id: as.staff_id,
-              full_name: as.staff.full_name
+              full_name: as.staff.full_name,
+              work_start_time: staffFromList?.work_start_time || null,
+              work_end_time: staffFromList?.work_end_time || null
             })
           }
         }
@@ -135,6 +141,27 @@ export default function AppointmentCalendar({
     
     // If no staff at all, return empty array
     return []
+  }
+
+  // Get time slots filtered by staff working hours
+  const getTimeSlotsForStaff = (staff: Staff | null): Array<{ hour: number; minute: number }> => {
+    if (!staff || !staff.work_start_time || !staff.work_end_time) {
+      // If no working hours, return all time slots
+      return timeSlots
+    }
+
+    // Parse working hours
+    const [startHour, startMinute] = staff.work_start_time.split(':').map(Number)
+    const [endHour, endMinute] = staff.work_end_time.split(':').map(Number)
+    
+    const startTime = startHour * 60 + startMinute
+    const endTime = endHour * 60 + endMinute
+
+    // Filter time slots within working hours
+    return timeSlots.filter(slot => {
+      const slotTime = slot.hour * 60 + slot.minute
+      return slotTime >= startTime && slotTime < endTime
+    })
   }
 
   const prevDay = () => {
@@ -375,45 +402,74 @@ export default function AppointmentCalendar({
               )}
 
               {/* Time slots and appointments */}
-              {timeSlots.map((timeSlot) => {
-                const timeDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
-                return (
-                  <div key={`${timeSlot.hour}-${timeSlot.minute}`} className="contents">
-                    {/* Time label */}
-                    <div className="bg-gray-50 border border-gray-200 p-2 text-sm font-medium text-gray-700 text-right pr-3">
-                      {format(timeDate, 'HH:mm')}
-                    </div>
-                    
-                    {/* Appointment cells for each staff */}
-                    {dayStaff.length > 0 ? (
-                      dayStaff.map((staff) => {
-                        // Get appointments that start in this time slot
-                        const slotAppointments = getAppointmentsForDate(selectedDay).filter((apt) => {
-                          const aptDate = new Date(apt.appointment_date)
-                          const aptHour = aptDate.getHours()
-                          const aptMinutes = aptDate.getMinutes()
+              {(() => {
+                // Get all unique time slots from all staff working hours
+                const allTimeSlots = new Set<string>()
+                dayStaff.forEach(staff => {
+                  const staffTimeSlots = getTimeSlotsForStaff(staff)
+                  staffTimeSlots.forEach(slot => {
+                    allTimeSlots.add(`${slot.hour}-${slot.minute}`)
+                  })
+                })
+                
+                // If no staff or no working hours, use all time slots
+                const slotsToShow = dayStaff.length > 0 && allTimeSlots.size > 0
+                  ? timeSlots.filter(slot => allTimeSlots.has(`${slot.hour}-${slot.minute}`))
+                  : timeSlots
+
+                return slotsToShow.map((timeSlot) => {
+                  const timeDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
+                  return (
+                    <div key={`${timeSlot.hour}-${timeSlot.minute}`} className="contents">
+                      {/* Time label */}
+                      <div className="bg-gray-50 border border-gray-200 p-2 text-sm font-medium text-gray-700 text-right pr-3">
+                        {format(timeDate, 'HH:mm')}
+                      </div>
+                      
+                      {/* Appointment cells for each staff */}
+                      {dayStaff.length > 0 ? (
+                        dayStaff.map((staff) => {
+                          // Check if this time slot is within staff working hours
+                          const staffTimeSlots = getTimeSlotsForStaff(staff)
+                          const isInWorkingHours = staffTimeSlots.some(s => s.hour === timeSlot.hour && s.minute === timeSlot.minute)
                           
-                          // Check if appointment starts in this time slot
-                          if (aptHour !== timeSlot.hour || aptMinutes !== timeSlot.minute) {
-                            return false
+                          if (!isInWorkingHours && staff.work_start_time && staff.work_end_time) {
+                            // Show empty gray cell if outside working hours
+                            return (
+                              <div
+                                key={staff.id}
+                                className="border border-gray-200 p-1 min-h-[30px] bg-gray-50"
+                              />
+                            )
                           }
+
+                          // Get appointments that start in this time slot
+                          const slotAppointments = getAppointmentsForDate(selectedDay).filter((apt) => {
+                            const aptDate = new Date(apt.appointment_date)
+                            const aptHour = aptDate.getHours()
+                            const aptMinutes = aptDate.getMinutes()
+                            
+                            // Check if appointment starts in this time slot
+                            if (aptHour !== timeSlot.hour || aptMinutes !== timeSlot.minute) {
+                              return false
+                            }
+                            
+                            // Check if appointment has this staff
+                            if (staff.id) {
+                              return apt.appointment_staff.some((as: any) => as.staff_id === staff.id)
+                            }
+                            return true
+                          })
                           
-                          // Check if appointment has this staff
-                          if (staff.id) {
-                            return apt.appointment_staff.some((as: any) => as.staff_id === staff.id)
-                          }
-                          return true
-                        })
-                        
-                        return (
-                          <div
-                            key={staff.id}
-                            className="border border-gray-200 p-1 min-h-[30px] bg-white hover:bg-gray-50 cursor-pointer transition-colors relative"
-                            onClick={() => {
-                              const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
-                              onDateClick(clickDate, staff.id)
-                            }}
-                          >
+                          return (
+                            <div
+                              key={staff.id}
+                              className="border border-gray-200 p-1 min-h-[30px] bg-white hover:bg-gray-50 cursor-pointer transition-colors relative"
+                              onClick={() => {
+                                const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
+                                onDateClick(clickDate, staff.id)
+                              }}
+                            >
                             {slotAppointments.map((apt) => {
                               const aptDate = new Date(apt.appointment_date)
                               const duration = apt.duration_minutes || 60
@@ -497,9 +553,10 @@ export default function AppointmentCalendar({
                         })}
                       </div>
                     )}
-                  </div>
-                )
-              })}
+                    </div>
+                  )
+                })
+              })()}
             </div>
           </div>
         </div>

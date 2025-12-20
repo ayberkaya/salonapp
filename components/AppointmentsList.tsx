@@ -47,7 +47,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const { showToast } = useToast()
 
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [staffList, setStaffList] = useState<Array<{ id: string; full_name: string }>>([])
+  const [staffList, setStaffList] = useState<Array<{ id: string; full_name: string; work_start_time: string | null; work_end_time: string | null }>>([])
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('all')
@@ -65,7 +65,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const loadStaff = async () => {
     const { data } = await supabase
       .from('staff')
-      .select('id, full_name')
+      .select('id, full_name, work_start_time, work_end_time')
       .eq('salon_id', profile.salon_id)
       .eq('is_active', true)
       .order('full_name')

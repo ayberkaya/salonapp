@@ -15,6 +15,8 @@ type Staff = {
   full_name: string
   phone: string | null
   is_active: boolean
+  work_start_time: string | null
+  work_end_time: string | null
   created_at: string
 }
 
@@ -34,6 +36,8 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
+    work_start_time: '',
+    work_end_time: '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -59,7 +63,7 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
   }
 
   const handleAdd = () => {
-    setFormData({ full_name: '', phone: '' })
+    setFormData({ full_name: '', phone: '', work_start_time: '', work_end_time: '' })
     setShowAddModal(true)
   }
 
@@ -68,6 +72,8 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
     setFormData({
       full_name: staffMember.full_name,
       phone: staffMember.phone || '',
+      work_start_time: staffMember.work_start_time || '',
+      work_end_time: staffMember.work_end_time || '',
     })
     setShowEditModal(true)
   }
@@ -97,6 +103,8 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
           .update({
             full_name: capitalizeWords(formData.full_name),
             phone: formData.phone.trim() || null,
+            work_start_time: formData.work_start_time.trim() || null,
+            work_end_time: formData.work_end_time.trim() || null,
           })
           .eq('id', editingStaff.id)
 
@@ -126,7 +134,7 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
         } else {
           showToast('Personel başarıyla eklendi', 'success')
           setShowAddModal(false)
-          setFormData({ full_name: '', phone: '' })
+          setFormData({ full_name: '', phone: '', work_start_time: '', work_end_time: '' })
           loadStaff()
         }
       }
@@ -294,6 +302,34 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Çalışma Başlangıç Saati (Opsiyonel)
+                </label>
+                <Input
+                  type="time"
+                  value={formData.work_start_time}
+                  onChange={(e) =>
+                    setFormData({ ...formData, work_start_time: e.target.value })
+                  }
+                  placeholder="09:30"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Çalışma Bitiş Saati (Opsiyonel)
+                </label>
+                <Input
+                  type="time"
+                  value={formData.work_end_time}
+                  onChange={(e) =>
+                    setFormData({ ...formData, work_end_time: e.target.value })
+                  }
+                  placeholder="18:00"
+                />
+              </div>
+            </div>
             <div className="flex gap-2 pt-2">
               <Button
                 variant="ghost"
@@ -355,6 +391,34 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
                   }}
                   placeholder="5551234567"
                   className="pl-12"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Çalışma Başlangıç Saati (Opsiyonel)
+                </label>
+                <Input
+                  type="time"
+                  value={formData.work_start_time}
+                  onChange={(e) =>
+                    setFormData({ ...formData, work_start_time: e.target.value })
+                  }
+                  placeholder="09:30"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Çalışma Bitiş Saati (Opsiyonel)
+                </label>
+                <Input
+                  type="time"
+                  value={formData.work_end_time}
+                  onChange={(e) =>
+                    setFormData({ ...formData, work_end_time: e.target.value })
+                  }
+                  placeholder="18:00"
                 />
               </div>
             </div>
