@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { Search, Plus, Calendar, Users, Clock, X, ArrowRight, Home, Receipt } from 'lucide-react'
+import { Search, Plus, Calendar, Users, Clock, X, Home, Receipt } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
@@ -393,15 +393,16 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
             <h2 className="text-2xl font-semibold text-gray-900">Son Müşteriler</h2>
             <Badge variant="default">{recentCustomers.length} müşteri</Badge>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {recentCustomers.map((customer) => (
-              <CustomerCard
-                key={customer.id}
-                customer={customer}
-                onClick={() => handleCustomerClick(customer)}
-                onQuickVisit={(customer) => handleQuickVisit(customer)}
-              />
-            ))}
+          <div className="flex justify-center">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" style={{ width: '65%' }}>
+              {recentCustomers.map((customer) => (
+                <CustomerCard
+                  key={customer.id}
+                  customer={customer}
+                  onClick={() => handleCustomerClick(customer)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -477,11 +478,9 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
 function CustomerCard({ 
   customer, 
   onClick,
-  onQuickVisit 
 }: { 
   customer: Customer
   onClick: () => void
-  onQuickVisit: (customer: Customer) => void
 }) {
   const lastVisitDate = customer.last_visit_at
     ? new Date(customer.last_visit_at).toLocaleDateString('tr-TR', {
@@ -491,9 +490,12 @@ function CustomerCard({
     : null
 
   return (
-    <Card className="group cursor-pointer p-3.5 transition-all hover:shadow-lg hover:scale-[1.02]">
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0" onClick={onClick}>
+    <Card 
+      className="group cursor-pointer p-3.5 transition-all hover:shadow-lg hover:scale-[1.02]"
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-center">
+        <div className="text-center">
           <h3 className="text-base font-semibold text-gray-900 truncate">{customer.full_name}</h3>
           <p className="mt-0.5 text-sm text-gray-600">{customer.phone}</p>
           {lastVisitDate && (
@@ -504,27 +506,6 @@ function CustomerCard({
           {!lastVisitDate && (
             <Badge variant="warning" className="mt-1 text-xs">Yeni</Badge>
           )}
-        </div>
-        <div className="ml-2 flex flex-col gap-1.5">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              // Direkt bu müşteri ile işlem seçimine geç
-              onQuickVisit(customer)
-            }}
-            className="cursor-pointer rounded-lg bg-blue-600 px-2.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-          >
-            <Clock className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onClick()
-            }}
-            className="cursor-pointer rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
         </div>
       </div>
     </Card>
