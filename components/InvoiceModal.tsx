@@ -464,6 +464,7 @@ export default function InvoiceModal({
                 }
               }}
               className="pl-10 text-black"
+              style={{ paddingTop: '9.6px', paddingBottom: '9.6px' }}
             />
             {selectedCustomer && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -520,7 +521,7 @@ export default function InvoiceModal({
           )}
 
           {selectedCustomer && (
-            <Card className="mt-2 p-3 bg-blue-50 border-blue-200">
+            <Card className="mt-2 bg-blue-50 border-blue-200" style={{ padding: '9.6px' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-900">{selectedCustomer.full_name}</p>
