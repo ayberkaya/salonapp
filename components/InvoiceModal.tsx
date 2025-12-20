@@ -10,7 +10,6 @@ import Input from '@/components/ui/Input'
 import { X, Plus, Trash2, Search } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import ServiceSelectDropdown from '@/components/ServiceSelectDropdown'
-import ServiceSelectDropdown from '@/components/ServiceSelectDropdown'
 
 type Customer = {
   id: string
