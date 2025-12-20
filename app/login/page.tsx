@@ -172,11 +172,17 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 space-y-2 text-center">
             <p className="text-xs text-gray-500">
               Sorun mu yaşıyorsunuz?{' '}
               <a href="/debug" className="font-medium text-blue-600 hover:text-blue-700">
                 Yardım alın
+              </a>
+            </p>
+            <p className="text-xs text-gray-500">
+              Salon sahibi misiniz?{' '}
+              <a href="/register-owner" className="font-medium text-blue-600 hover:text-blue-700">
+                Hesap oluşturun
               </a>
             </p>
           </div>

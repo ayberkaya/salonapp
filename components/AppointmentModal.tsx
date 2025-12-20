@@ -207,11 +207,11 @@ export default function AppointmentModal({
         }
       }
     }
-  }, [isOpen, appointment, initialDate])
+  }, [isOpen, appointment?.id, initialDate])
   
   // Handle initialStaffId separately after staffList is loaded
   useEffect(() => {
-    if (isOpen && !appointment && initialStaffId && staffList.length > 0) {
+    if (isOpen && !appointment && initialStaffId && staffList && staffList.length > 0) {
       const selectedStaff = staffList.find(s => s.id === initialStaffId)
       if (selectedStaff) {
         setServiceRows(prev => {
@@ -229,7 +229,7 @@ export default function AppointmentModal({
         })
       }
     }
-  }, [isOpen, appointment, initialStaffId, staffList])
+  }, [isOpen, appointment?.id, initialStaffId, staffList.length])
 
   useEffect(() => {
     if (customerSearch.length >= 2) {
