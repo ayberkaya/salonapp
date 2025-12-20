@@ -257,42 +257,45 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Randevular</h1>
-          <p className="mt-1 text-gray-600">Randevuları görüntüleyin ve yönetin</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Randevular</h1>
+          <p className="mt-1 text-sm sm:text-base text-gray-600">Randevuları görüntüleyin ve yönetin</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {/* View Toggle */}
-          <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1 w-full sm:w-auto">
             <button
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors min-h-[44px] flex-1 sm:flex-initial ${
                 viewMode === 'calendar'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               <Calendar className="h-4 w-4" />
-              Takvim
+              <span className="hidden sm:inline">Takvim</span>
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors min-h-[44px] flex-1 sm:flex-initial ${
                 viewMode === 'list'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
               <List className="h-4 w-4" />
-              Liste
+              <span className="hidden sm:inline">Liste</span>
             </button>
           </div>
-          <Button onClick={() => {
-            setEditingAppointment(null)
-            setSelectedDate(null)
-            setShowAppointmentModal(true)
-          }}>
+          <Button 
+            onClick={() => {
+              setEditingAppointment(null)
+              setSelectedDate(null)
+              setShowAppointmentModal(true)
+            }}
+            className="w-full sm:w-auto min-h-[44px]"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Yeni Randevu
           </Button>
@@ -370,51 +373,52 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
             {appointments.map((appointment) => (
               <div
                 key={appointment.id}
-                className="rounded-lg border border-gray-200 bg-white p-4 transition-all hover:shadow-md"
+                className="rounded-lg border border-gray-200 bg-white p-3 sm:p-4 transition-all hover:shadow-md"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       {getStatusBadge(appointment.status)}
                       <span className="text-xs text-gray-500">
                         {formatDate(appointment.appointment_date)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
                       <div className="flex items-center gap-1.5">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <p className="text-sm font-medium text-gray-900">
+                        <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <p className="text-sm font-medium text-gray-900 truncate">
                           {appointment.customers?.full_name || 'Bilinmeyen Müşteri'}
                         </p>
                       </div>
                       {appointment.appointment_staff && appointment.appointment_staff.length > 0 && (
                         <div className="flex items-center gap-1.5">
-                          <Scissors className="h-4 w-4 text-gray-400" />
-                          <p className="text-sm text-gray-600">
+                          <Scissors className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <p className="text-sm text-gray-600 truncate">
                             {appointment.appointment_staff.map((as: any) => as.staff?.full_name).filter(Boolean).join(', ')}
                           </p>
                         </div>
                       )}
                       {appointment.appointment_services && appointment.appointment_services.length > 0 && (
                         <div className="flex items-center gap-1.5">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <p className="text-sm text-gray-600">
+                          <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <p className="text-sm text-gray-600 truncate">
                             {appointment.appointment_services.map((as: any) => as.services?.name).filter(Boolean).join(', ')}
                           </p>
                         </div>
                       )}
                     </div>
                     {appointment.notes && (
-                      <p className="text-xs text-gray-600 mt-2">{appointment.notes}</p>
+                      <p className="text-xs text-gray-600 mt-2 line-clamp-2">{appointment.notes}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {appointment.status === 'PENDING' && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleStatusChange(appointment.id, 'CONFIRMED')}
                         title="Onayla"
+                        className="min-w-[44px] min-h-[44px]"
                       >
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       </Button>
@@ -425,6 +429,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
                         size="sm"
                         onClick={() => handleStatusChange(appointment.id, 'CANCELLED')}
                         title="İptal Et"
+                        className="min-w-[44px] min-h-[44px]"
                       >
                         <XCircle className="h-4 w-4 text-red-600" />
                       </Button>
@@ -438,6 +443,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
                           setShowAppointmentModal(true)
                         }}
                         title="Düzenle"
+                        className="min-w-[44px] min-h-[44px]"
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -447,7 +453,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
                       size="sm"
                       onClick={() => handleDelete(appointment.id)}
                       title="Sil"
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 min-w-[44px] min-h-[44px]"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

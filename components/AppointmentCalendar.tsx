@@ -248,23 +248,23 @@ export default function AppointmentCalendar({
   const dayStaff = viewType === 'day' ? getStaffForDay(selectedDay) : []
 
   return (
-    <Card className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <Card className="p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
           {viewType === 'month' ? (
             <>
               <button
                 onClick={prevMonth}
-                className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+                className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-base sm:text-xl font-semibold text-gray-900 text-center sm:text-left flex-1 sm:flex-initial">
                 {format(currentMonth, 'MMMM yyyy', { locale: tr })}
               </h2>
               <button
                 onClick={nextMonth}
-                className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+                className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -273,47 +273,49 @@ export default function AppointmentCalendar({
             <>
               <button
                 onClick={prevDay}
-                className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+                className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-sm sm:text-xl font-semibold text-gray-900 text-center sm:text-left flex-1 sm:flex-initial">
                 {format(selectedDay, 'd MMMM yyyy', { locale: tr })}
               </h2>
               <button
                 onClick={nextDay}
-                className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+                className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
             </>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
           {/* View Type Toggle */}
           <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1">
             <button
               onClick={() => setViewType('month')}
-              className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors min-h-[44px] ${
                 viewType === 'month'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              Aylık
+              <span className="hidden sm:inline">Aylık</span>
+              <span className="sm:hidden">Ay</span>
             </button>
             <button
               onClick={() => {
                 setViewType('day')
                 setSelectedDay(new Date())
               }}
-              className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center gap-1 sm:gap-2 rounded px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors min-h-[44px] ${
                 viewType === 'day'
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              Günlük
+              <span className="hidden sm:inline">Günlük</span>
+              <span className="sm:hidden">Gün</span>
             </button>
           </div>
           <button
@@ -322,7 +324,7 @@ export default function AppointmentCalendar({
               setCurrentMonth(today)
               setSelectedDay(today)
             }}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium min-h-[44px] px-2 sm:px-0"
           >
             Bugün
           </button>
@@ -331,7 +333,7 @@ export default function AppointmentCalendar({
 
       {/* Month View */}
       {viewType === 'month' && (
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {/* Week Day Headers */}
           {weekDays.map((day) => (
             <div
@@ -353,7 +355,7 @@ export default function AppointmentCalendar({
               <div
                 key={dayIdx}
                 className={`
-                  min-h-[100px] border-2 rounded-lg p-2 transition-all
+                  min-h-[60px] sm:min-h-[100px] border-2 rounded-lg p-1 sm:p-2 transition-all
                   ${isCurrentMonth ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50'}
                   ${isTodayDay ? 'border-blue-400 bg-blue-50' : ''}
                   ${isPast ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-300 hover:bg-blue-50'}
@@ -420,24 +422,24 @@ export default function AppointmentCalendar({
 
       {/* Day View */}
       {viewType === 'day' && (
-        <div className="overflow-x-auto">
-          <div className="min-w-full">
-            <div className="grid gap-1" style={{ gridTemplateColumns: `80px repeat(${Math.max(dayStaff.length, 1)}, 1fr)` }}>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="min-w-full px-4 sm:px-0">
+            <div className="grid gap-1" style={{ gridTemplateColumns: `60px repeat(${Math.max(dayStaff.length, 1)}, 1fr)` }}>
               {/* Top-left corner */}
-              <div className="bg-gray-50 border border-gray-200 rounded-tl-lg p-2"></div>
+              <div className="bg-gray-50 border border-gray-200 rounded-tl-lg p-1 sm:p-2"></div>
               
               {/* Staff Headers */}
               {dayStaff.length > 0 ? (
                 dayStaff.map((staff) => (
                   <div
                     key={staff.id}
-                    className="bg-gray-50 border border-gray-200 p-2 text-center text-sm font-semibold text-gray-700"
+                    className="bg-gray-50 border border-gray-200 p-1 sm:p-2 text-center text-xs sm:text-sm font-semibold text-gray-700"
                   >
                     {staff.full_name}
                   </div>
                 ))
               ) : (
-                <div className="bg-gray-50 border border-gray-200 p-2 text-center text-sm font-semibold text-gray-700">
+                <div className="bg-gray-50 border border-gray-200 p-1 sm:p-2 text-center text-xs sm:text-sm font-semibold text-gray-700">
                   Personel Yok
                 </div>
               )}
@@ -453,7 +455,7 @@ export default function AppointmentCalendar({
                   return (
                     <div key={`${timeSlot.hour}-${timeSlot.minute}`} className="contents">
                       {/* Time label */}
-                      <div className="bg-gray-50 border border-gray-200 p-2 text-sm font-medium text-gray-700 text-right pr-3">
+                      <div className="bg-gray-50 border border-gray-200 p-1 sm:p-2 text-xs sm:text-sm font-medium text-gray-700 text-right pr-2 sm:pr-3">
                         {format(timeDate, 'HH:mm')}
                       </div>
                       
