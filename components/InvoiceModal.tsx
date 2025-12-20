@@ -612,9 +612,9 @@ export default function InvoiceModal({
           <Button
             onClick={handleAddServiceRow}
             variant="ghost"
-            className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50"
+            className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 h-9 text-sm"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-3.5 w-3.5" />
             Bir hizmet daha ekle
           </Button>
         </div>
