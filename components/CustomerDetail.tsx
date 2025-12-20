@@ -38,6 +38,8 @@ export default function CustomerDetail({
   const supabase = createClient()
   const { showToast } = useToast()
   const [showQRModal, setShowQRModal] = useState(false)
+  const [showServiceSelectModal, setShowServiceSelectModal] = useState(false)
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [qrToken, setQrToken] = useState<string | null>(null)
   const [tokenId, setTokenId] = useState<string | null>(null)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
@@ -45,6 +47,41 @@ export default function CustomerDetail({
   const [isEditing, setIsEditing] = useState(false)
   const [editedCustomer, setEditedCustomer] = useState<Partial<Customer>>(customer)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Available services
+  const availableServices = [
+    'Kesim',
+    'Fön',
+    'Boya',
+    'Makyaj',
+    'Kaş',
+    'Kirpik',
+    'Cilt Bakımı',
+    'Masaj',
+    'Manikür',
+    'Pedikür',
+    'Saç Bakımı',
+    'Diğer'
+  ]
+
+  const handleServiceSelect = (service: string) => {
+    setSelectedServices((prev) => {
+      if (prev.includes(service)) {
+        return prev.filter((s) => s !== service)
+      } else {
+        return [...prev, service]
+      }
+    })
+  }
+
+  const handleServiceConfirm = () => {
+    if (selectedServices.length === 0) {
+      showToast('Lütfen en az bir işlem seçin', 'error')
+      return
+    }
+    setShowServiceSelectModal(false)
+    handleStartVisit()
+  }
 
   // İl değiştiğinde ilçe listesini sıfırla
   const handleProvinceChange = (selectedProvince: string) => {
@@ -128,15 +165,20 @@ export default function CustomerDetail({
       setTokenId(data.id)
       setExpiresAt(expiresAtDate)
       const baseUrl = getAppUrl()
-      const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}`
-      console.log('QR Code URL:', checkinUrl) // Debug: QR kod URL'sini kontrol et
-      console.log('Token expires at:', expiresAtDate.toISOString()) // Debug: Token expiration
+      // Pass services as query parameter
+      const servicesParam = encodeURIComponent(JSON.stringify(selectedServices))
+      const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}&services=${servicesParam}`
       setQrUrl(checkinUrl)
       setShowQRModal(true)
     } else {
       console.error('Token creation error:', error)
       showToast('Ziyaret başlatılamadı', 'error')
     }
+  }
+
+  const handleStartVisitClick = () => {
+    setSelectedServices([])
+    setShowServiceSelectModal(true)
   }
 
   const lastVisitDate = customer.last_visit_at
@@ -420,7 +462,7 @@ export default function CustomerDetail({
             QR kod oluşturarak müşterinin ziyaretini onaylamasını sağlayın
           </p>
           <Button
-            onClick={handleStartVisit}
+            onClick={handleStartVisitClick}
             size="lg"
             className="w-full sm:w-auto sm:min-w-[200px]"
           >
@@ -505,6 +547,7 @@ export default function CustomerDetail({
             {visits.map((visit) => {
               const visitDate = new Date(visit.visited_at)
               const isToday = visitDate.toDateString() === new Date().toDateString()
+              const services = (visit as any).services || []
               
               return (
                 <Card key={visit.id} className="p-4 transition-shadow hover:shadow-md">
@@ -522,6 +565,15 @@ export default function CustomerDetail({
                           <Badge variant="success" className="text-xs">Bugün</Badge>
                         )}
                       </div>
+                      {services.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {services.map((service: string, idx: number) => (
+                            <Badge key={idx} variant="default" className="text-xs">
+                              {service}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                       <p className="mt-1 text-sm text-gray-600">
                         {visitDate.toLocaleTimeString('tr-TR', {
                           hour: '2-digit',
@@ -549,6 +601,51 @@ export default function CustomerDetail({
         )}
       </div>
 
+      {/* Service Select Modal */}
+      {showServiceSelectModal && (
+        <Modal isOpen={true} onClose={() => {
+          setShowServiceSelectModal(false)
+          setSelectedServices([])
+        }} title={`İşlem Seç - ${customer.full_name}`}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">Yaptırılan işlemleri seçin:</p>
+            <div className="grid grid-cols-2 gap-3">
+              {availableServices.map((service) => (
+                <button
+                  key={service}
+                  onClick={() => handleServiceSelect(service)}
+                  className={`rounded-lg border-2 p-3 text-left transition-all ${
+                    selectedServices.includes(service)
+                      ? 'border-blue-500 bg-blue-50 text-blue-900'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-black'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{service}</span>
+                    {selectedServices.includes(service) && (
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white">
+                        <X className="h-3 w-3" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => {
+                setShowServiceSelectModal(false)
+                setSelectedServices([])
+              }} className="flex-1">
+                İptal
+              </Button>
+              <Button onClick={handleServiceConfirm} disabled={selectedServices.length === 0} className="flex-1">
+                Devam Et ({selectedServices.length})
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* QR Modal */}
       {showQRModal && qrUrl && qrToken && tokenId && (
         <QRModal
@@ -557,14 +654,16 @@ export default function CustomerDetail({
           qrToken={qrToken}
           tokenId={tokenId}
           expiresAt={expiresAt}
+          services={selectedServices}
           onClose={() => {
             setShowQRModal(false)
             setQrToken(null)
             setTokenId(null)
             setQrUrl(null)
             setExpiresAt(null)
+            setSelectedServices([])
           }}
-          onRegenerate={handleStartVisit}
+          onRegenerate={handleStartVisitClick}
         />
       )}
     </div>
@@ -577,6 +676,7 @@ function QRModal({
   qrToken,
   tokenId,
   expiresAt,
+  services = [],
   onClose,
   onRegenerate,
 }: {
@@ -585,6 +685,7 @@ function QRModal({
   qrToken: string
   tokenId: string
   expiresAt: Date | null
+  services?: string[]
   onClose: () => void
   onRegenerate: () => void
 }) {
@@ -654,13 +755,28 @@ function QRModal({
           </p>
         </div>
 
-        {/* QR Code */}
-        <div className="rounded-2xl border-4 border-white bg-white p-6 shadow-2xl">
-          <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}&margin=1`}
-            alt="QR Code"
-            className="h-auto w-full max-w-md"
-          />
+        {/* QR Code with Services */}
+        <div className="relative flex items-center justify-center w-full">
+          {/* Left Services - Absolute positioned */}
+          {services.length > 0 && (
+            <div className="absolute left-0 top-0 flex flex-col gap-2 max-w-[200px]">
+              <h3 className="text-lg font-semibold text-white mb-2">Yapılan İşlemler</h3>
+              {services.map((service) => (
+                <Badge key={service} variant="default" className="bg-white/20 text-white whitespace-nowrap">
+                  {service}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* QR Code - Centered */}
+          <div className="rounded-2xl border-4 border-white bg-white p-6 shadow-2xl">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}&margin=1`}
+              alt="QR Code"
+              className="h-auto w-full max-w-md"
+            />
+          </div>
         </div>
 
         {/* Countdown */}

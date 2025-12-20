@@ -8,6 +8,7 @@ import { Home } from 'lucide-react'
 function CheckInContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const servicesParam = searchParams.get('services')
   const [step, setStep] = useState<'confirming' | 'success' | 'error'>('confirming')
   const [error, setError] = useState<string | null>(null)
 
@@ -21,12 +22,22 @@ function CheckInContent() {
     // Automatically confirm visit when token is present
     const confirmVisit = async () => {
       try {
+        // Parse services if present
+        let services = null
+        if (servicesParam) {
+          try {
+            services = JSON.parse(decodeURIComponent(servicesParam))
+          } catch {
+            services = servicesParam
+          }
+        }
+
         const response = await fetch('/api/checkin', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token, services }),
         })
 
         let data

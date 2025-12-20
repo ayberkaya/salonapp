@@ -34,8 +34,27 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   const [loading, setLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showQuickVisitModal, setShowQuickVisitModal] = useState(false)
+  const [showCustomerSelectModal, setShowCustomerSelectModal] = useState(false)
+  const [showServiceSelectModal, setShowServiceSelectModal] = useState(false)
   const [quickVisitCustomer, setQuickVisitCustomer] = useState<Customer | null>(null)
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
   const searchInputRef = useRef<HTMLInputElement>(null)
+  
+  // Available services
+  const availableServices = [
+    'Kesim',
+    'Fön',
+    'Boya',
+    'Makyaj',
+    'Kaş',
+    'Kirpik',
+    'Cilt Bakımı',
+    'Masaj',
+    'Manikür',
+    'Pedikür',
+    'Saç Bakımı',
+    'Diğer'
+  ]
 
   // Debounced search
   useEffect(() => {
@@ -91,8 +110,34 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
     router.push(`/customers/${customer.id}`)
   }
 
-  const handleQuickVisit = async (customer: Customer) => {
-    setQuickVisitCustomer(customer)
+  const handleQuickVisit = async (customer?: Customer) => {
+    if (customer) {
+      // Müşteri seçildi, işlem seçimine geç
+      setQuickVisitCustomer(customer)
+      setSelectedServices([])
+      setShowServiceSelectModal(true)
+    } else {
+      // Her zaman müşteri seçim modalını aç
+      setShowCustomerSelectModal(true)
+    }
+  }
+
+  const handleServiceSelect = (service: string) => {
+    setSelectedServices((prev) => {
+      if (prev.includes(service)) {
+        return prev.filter((s) => s !== service)
+      } else {
+        return [...prev, service]
+      }
+    })
+  }
+
+  const handleServiceConfirm = () => {
+    if (selectedServices.length === 0) {
+      showToast('Lütfen en az bir işlem seçin', 'error')
+      return
+    }
+    setShowServiceSelectModal(false)
     setShowQuickVisitModal(true)
   }
 
@@ -286,13 +331,8 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
         <Card className="p-6 sm:col-span-2 lg:col-span-1">
           <Button
             onClick={() => {
-              if (searchResults.length > 0) {
-                handleQuickVisit(searchResults[0])
-              } else if (initialRecentCustomers.length > 0) {
-                handleQuickVisit(initialRecentCustomers[0])
-              } else {
-                showToast('Önce bir müşteri seçin', 'error')
-              }
+              // Her zaman müşteri seçim modalını aç
+              handleQuickVisit()
             }}
             size="lg"
             variant="secondary"
@@ -392,7 +432,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
                 key={customer.id}
                 customer={customer}
                 onClick={() => handleCustomerClick(customer)}
-                onQuickVisit={() => handleQuickVisit(customer)}
+                onQuickVisit={() => handleQuickVisit()}
               />
             ))}
           </div>
@@ -407,14 +447,49 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
         />
       )}
 
+      {/* Customer Select Modal */}
+      {showCustomerSelectModal && (
+        <CustomerSelectModal
+          customers={searchResults.length > 0 ? searchResults : initialRecentCustomers}
+          onSelect={(customer) => {
+            setShowCustomerSelectModal(false)
+            handleQuickVisit(customer)
+          }}
+          onClose={() => setShowCustomerSelectModal(false)}
+          onSearch={() => {
+            // Arama yapmak için modal'ı kapat ve arama kutusuna odaklan
+            setShowCustomerSelectModal(false)
+            searchInputRef.current?.focus()
+          }}
+        />
+      )}
+
+      {/* Service Select Modal */}
+      {showServiceSelectModal && quickVisitCustomer && (
+        <ServiceSelectModal
+          customer={quickVisitCustomer}
+          availableServices={availableServices}
+          selectedServices={selectedServices}
+          onServiceToggle={handleServiceSelect}
+          onConfirm={handleServiceConfirm}
+          onClose={() => {
+            setShowServiceSelectModal(false)
+            setQuickVisitCustomer(null)
+            setSelectedServices([])
+          }}
+        />
+      )}
+
       {/* Quick Visit Modal */}
       {showQuickVisitModal && quickVisitCustomer && (
         <QuickVisitModal
           customer={quickVisitCustomer}
           profile={profile}
+          services={selectedServices}
           onClose={() => {
             setShowQuickVisitModal(false)
             setQuickVisitCustomer(null)
+            setSelectedServices([])
           }}
         />
       )}
@@ -457,6 +532,7 @@ function CustomerCard({
           <button
             onClick={(e) => {
               e.stopPropagation()
+              // Her zaman müşteri seçim modalını aç
               onQuickVisit()
             }}
             className="cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
@@ -478,13 +554,143 @@ function CustomerCard({
   )
 }
 
+function CustomerSelectModal({
+  customers,
+  onSelect,
+  onClose,
+  onSearch,
+}: {
+  customers: Customer[]
+  onSelect: (customer: Customer) => void
+  onClose: () => void
+  onSearch?: () => void
+}) {
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Filter customers by name or phone
+  const filteredCustomers = customers.filter((customer) => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      customer.full_name.toLowerCase().includes(query) ||
+      customer.phone.replace(/\s/g, '').includes(query.replace(/\s/g, ''))
+    )
+  })
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title="Müşteri Seç">
+      <div className="space-y-4">
+        {/* Search Input */}
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <Input
+            type="text"
+            placeholder="İsim veya telefon ile ara..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 text-black"
+            autoFocus
+          />
+        </div>
+
+        {filteredCustomers.length === 0 ? (
+          <div className="space-y-4">
+            <EmptyState
+              title={customers.length === 0 ? "Müşteri bulunamadı" : "Arama sonucu bulunamadı"}
+              description={customers.length === 0 
+                ? "Önce bir müşteri arayın veya yeni müşteri oluşturun"
+                : "Farklı bir arama terimi deneyin"}
+            />
+            {onSearch && customers.length === 0 && (
+              <Button onClick={onSearch} className="w-full">
+                Müşteri Ara
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="max-h-96 space-y-1.5 overflow-y-auto">
+            {filteredCustomers.map((customer) => (
+              <button
+                key={customer.id}
+                onClick={() => onSelect(customer)}
+                className="w-full rounded-lg border border-gray-200 p-3 text-left transition-all hover:bg-gray-50 hover:shadow-md"
+              >
+                <p className="font-medium text-gray-900">{customer.full_name}</p>
+                <p className="text-sm text-gray-600">{customer.phone}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
+  )
+}
+
+function ServiceSelectModal({
+  customer,
+  availableServices,
+  selectedServices,
+  onServiceToggle,
+  onConfirm,
+  onClose,
+}: {
+  customer: Customer
+  availableServices: string[]
+  selectedServices: string[]
+  onServiceToggle: (service: string) => void
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  return (
+    <Modal isOpen={true} onClose={onClose} title={`İşlem Seç - ${customer.full_name}`}>
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600">Yaptırılan işlemleri seçin:</p>
+        <div className="grid grid-cols-2 gap-3">
+          {availableServices.map((service) => (
+            <button
+              key={service}
+              onClick={() => onServiceToggle(service)}
+              className={`rounded-lg border-2 p-3 text-left transition-all ${
+                selectedServices.includes(service)
+                  ? 'border-blue-500 bg-blue-50 text-blue-900'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-black'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{service}</span>
+                {selectedServices.includes(service) && (
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white">
+                    <X className="h-3 w-3" />
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={onClose} className="flex-1">
+            İptal
+          </Button>
+          <Button onClick={onConfirm} disabled={selectedServices.length === 0} className="flex-1">
+            Devam Et ({selectedServices.length})
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 function QuickVisitModal({
   customer,
   profile,
+  services,
   onClose,
 }: {
   customer: Customer
   profile: Profile
+  services: string[]
   onClose: () => void
 }) {
   const router = useRouter()
@@ -501,6 +707,8 @@ function QuickVisitModal({
       const tokenValue = crypto.randomUUID()
       const expiresAtDate = new Date(Date.now() + 90 * 1000)
 
+      // Store services in token metadata (we'll use a JSON field or store in a separate table)
+      // For now, we'll pass services to the checkin API via token metadata
       const { data, error } = await supabase
         .from('visit_tokens')
         .insert({
@@ -518,17 +726,18 @@ function QuickVisitModal({
         setTokenId(data.id)
         setExpiresAt(expiresAtDate)
         const baseUrl = getAppUrl()
-        const fullUrl = `${baseUrl}/checkin?token=${tokenValue}`
-        console.log('QR Code URL:', fullUrl) // Debug: QR kod URL'sini kontrol et
-        console.log('Token expires at:', expiresAtDate.toISOString()) // Debug: Token expiration
+        // Pass services as query parameter (will be stored when visit is confirmed)
+        const servicesParam = encodeURIComponent(JSON.stringify(services))
+        const fullUrl = `${baseUrl}/checkin?token=${tokenValue}&services=${servicesParam}`
         setQrUrl(fullUrl)
       } else {
         console.error('Token creation error:', error)
+        showToast('QR kod oluşturulurken hata oluştu', 'error')
       }
     }
 
     generateToken()
-  }, [])
+  }, [customer.id, profile.salon_id, profile.id, services, showToast])
 
   useEffect(() => {
     if (!expiresAt) return
@@ -555,8 +764,11 @@ function QuickVisitModal({
         .single()
 
       if (!error && data && data.used_at) {
-        // Token has been used - close modal and show success message
+        // Token has been used - close modal, show success message, and navigate to customer page
         showToast('Ziyaret başarıyla onaylandı!', 'success')
+        setTimeout(() => {
+          router.push(`/customers/${customer.id}`)
+        }, 1000)
         onClose()
       }
     }
@@ -564,7 +776,7 @@ function QuickVisitModal({
     // Check every 2 seconds
     const interval = setInterval(checkTokenStatus, 2000)
     return () => clearInterval(interval)
-  }, [tokenId, qrToken, onClose, showToast])
+  }, [tokenId, qrToken, onClose, showToast, customer.id, router])
 
   const handleHomeClick = () => {
     onClose() // Modal'ı kapat
@@ -580,20 +792,35 @@ function QuickVisitModal({
       >
         <Home className="h-6 w-6" />
       </button>
-      <div className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
-        <div className="w-full">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">{customer.full_name}</h2>
-          <p className="mt-2 text-lg text-gray-300">QR kodu tarayarak ziyareti onaylayın</p>
-        </div>
+        <div className="flex w-full max-w-4xl flex-col items-center space-y-8 text-center">
+          <div className="w-full">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">{customer.full_name}</h2>
+            <p className="mt-2 text-lg text-gray-300">QR kodu tarayarak ziyareti onaylayın</p>
+          </div>
 
         {qrUrl && (
           <>
-            <div className="rounded-2xl border-4 border-white bg-white p-6 shadow-2xl">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}&margin=1`}
-                alt="QR Code"
-                className="h-auto w-full max-w-md"
-              />
+            <div className="relative flex items-center justify-center w-full">
+              {/* Left Services - Absolute positioned */}
+              {services.length > 0 && (
+                <div className="absolute left-0 top-0 flex flex-col gap-2 max-w-[200px]">
+                  <h3 className="text-lg font-semibold text-white mb-2">Yapılan İşlemler</h3>
+                  {services.map((service) => (
+                    <Badge key={service} variant="default" className="bg-white/20 text-white whitespace-nowrap">
+                      {service}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* QR Code - Centered */}
+              <div className="rounded-2xl border-4 border-white bg-white p-6 shadow-2xl">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qrUrl)}&margin=1`}
+                  alt="QR Code"
+                  className="h-auto w-full max-w-md"
+                />
+              </div>
             </div>
 
             <div className="space-y-4">

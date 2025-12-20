@@ -3,13 +3,27 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    const { token } = await request.json()
+    const { token, services } = await request.json()
 
     if (!token) {
       return NextResponse.json(
         { error: 'Missing visit token' },
         { status: 400 }
       )
+    }
+
+    // Parse services if it's a string (from query parameter)
+    let servicesArray: string[] = []
+    if (services) {
+      if (typeof services === 'string') {
+        try {
+          servicesArray = JSON.parse(decodeURIComponent(services))
+        } catch {
+          servicesArray = [services]
+        }
+      } else if (Array.isArray(services)) {
+        servicesArray = services
+      }
     }
 
     // Use service role client to bypass RLS for token lookup
@@ -110,7 +124,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create visit record
+    // Create visit record with services
     const { error: visitError } = await supabase
       .from('visits')
       .insert({
@@ -118,6 +132,7 @@ export async function POST(request: Request) {
         customer_id: tokenData.customer_id,
         created_by: tokenData.created_by,
         visited_at: new Date().toISOString(),
+        services: servicesArray.length > 0 ? servicesArray : null,
       })
 
     if (visitError) {
