@@ -318,29 +318,38 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
             </div>
           </div>
         </Card>
-        <Card className="p-6 sm:col-span-2 lg:col-span-1">
-          <Button
+        <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+          <button
             onClick={() => setShowCreateModal(true)}
-            size="lg"
-            className="h-full w-full"
+            className="relative flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 p-8 text-white transition-all duration-300 hover:from-blue-700 hover:via-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <Plus className="mr-2 h-5 w-5" />
-            Yeni Müşteri
-          </Button>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+              <Plus className="h-7 w-7" />
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold">Yeni Müşteri</p>
+              <p className="mt-1 text-sm text-blue-100">Hızlı kayıt</p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
+          </button>
         </Card>
-        <Card className="p-6 sm:col-span-2 lg:col-span-1">
-          <Button
+        <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+          <button
             onClick={() => {
               // Her zaman müşteri seçim modalını aç
               handleQuickVisit()
             }}
-            size="lg"
-            variant="secondary"
-            className="h-full w-full"
+            className="relative flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-700 via-gray-600 to-gray-800 p-8 text-white transition-all duration-300 hover:from-gray-800 hover:via-gray-700 hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           >
-            <Clock className="mr-2 h-5 w-5" />
-            Hızlı Ziyaret
-          </Button>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+              <Clock className="h-7 w-7" />
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold">Hızlı Ziyaret</p>
+              <p className="mt-1 text-sm text-gray-300">Anında başlat</p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
+          </button>
         </Card>
       </div>
 
