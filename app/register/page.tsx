@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/lib/toast-context'
@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import { CheckCircle } from 'lucide-react'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { showToast } = useToast()
@@ -342,6 +342,25 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+          <Card className="w-full max-w-md p-8 text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+            </div>
+            <p className="text-gray-600">Yükleniyor...</p>
+          </Card>
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   )
 }
 
