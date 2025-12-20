@@ -405,7 +405,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
                 key={customer.id}
                 customer={customer}
                 onClick={() => handleCustomerClick(customer)}
-                onQuickVisit={() => handleQuickVisit(customer)}
+                onQuickVisit={(customer) => handleQuickVisit(customer)}
               />
             ))
           ) : (
@@ -432,7 +432,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
                 key={customer.id}
                 customer={customer}
                 onClick={() => handleCustomerClick(customer)}
-                onQuickVisit={() => handleQuickVisit()}
+                onQuickVisit={(customer) => handleQuickVisit(customer)}
               />
             ))}
           </div>
@@ -504,7 +504,7 @@ function CustomerCard({
 }: { 
   customer: Customer
   onClick: () => void
-  onQuickVisit: () => void
+  onQuickVisit: (customer: Customer) => void
 }) {
   const lastVisitDate = customer.last_visit_at
     ? new Date(customer.last_visit_at).toLocaleDateString('tr-TR', {
@@ -532,8 +532,8 @@ function CustomerCard({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              // Her zaman müşteri seçim modalını aç
-              onQuickVisit()
+              // Direkt bu müşteri ile işlem seçimine geç
+              onQuickVisit(customer)
             }}
             className="cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
