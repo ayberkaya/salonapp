@@ -41,6 +41,8 @@ type Staff = {
 interface AppointmentCalendarProps {
   appointments: Appointment[]
   staffList: Staff[]
+  openingTime?: string | null
+  closingTime?: string | null
   onDateClick: (date: Date, staffId?: string) => void
   onAppointmentClick: (appointment: Appointment) => void
 }
@@ -48,6 +50,8 @@ interface AppointmentCalendarProps {
 export default function AppointmentCalendar({
   appointments,
   staffList,
+  openingTime,
+  closingTime,
   onDateClick,
   onAppointmentClick,
 }: AppointmentCalendarProps) {
@@ -94,17 +98,41 @@ export default function AppointmentCalendar({
     })
   }
 
-  // Generate time slots (08:00 - 20:00) with 30-minute intervals
+  // Generate time slots based on salon opening/closing hours (default: 08:00 - 20:00)
   const timeSlots = useMemo(() => {
     const slots: Array<{ hour: number; minute: number }> = []
-    for (let hour = 8; hour <= 20; hour++) {
-      slots.push({ hour, minute: 0 })
-      if (hour < 20) {
-        slots.push({ hour, minute: 30 })
-      }
+    
+    // Parse opening and closing times
+    let startHour = 8
+    let startMinute = 0
+    let endHour = 20
+    let endMinute = 0
+    
+    if (openingTime) {
+      const [hour, minute] = openingTime.split(':').map(Number)
+      startHour = hour
+      startMinute = minute || 0
     }
+    
+    if (closingTime) {
+      const [hour, minute] = closingTime.split(':').map(Number)
+      endHour = hour
+      endMinute = minute || 0
+    }
+    
+    // Calculate start and end in minutes from midnight
+    const startMinutes = startHour * 60 + startMinute
+    const endMinutes = endHour * 60 + endMinute
+    
+    // Generate slots in 30-minute intervals
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+      const hour = Math.floor(minutes / 60)
+      const minute = minutes % 60
+      slots.push({ hour, minute })
+    }
+    
     return slots
-  }, [])
+  }, [openingTime, closingTime])
 
   // Get all unique staff from appointments for the selected day
   // If no appointments have staff, show all staff
@@ -143,25 +171,28 @@ export default function AppointmentCalendar({
     return []
   }
 
-  // Get time slots filtered by staff working hours
+  // Get time slots filtered by staff working hours and salon hours
   const getTimeSlotsForStaff = (staff: Staff | null): Array<{ hour: number; minute: number }> => {
-    if (!staff || !staff.work_start_time || !staff.work_end_time) {
-      // If no working hours, return all time slots
-      return timeSlots
+    // First, filter by salon hours (timeSlots already filtered by salon hours)
+    let availableSlots = timeSlots
+
+    // Then, if staff has working hours, filter by staff hours
+    if (staff && staff.work_start_time && staff.work_end_time) {
+      // Parse staff working hours
+      const [startHour, startMinute] = staff.work_start_time.split(':').map(Number)
+      const [endHour, endMinute] = staff.work_end_time.split(':').map(Number)
+      
+      const startTime = startHour * 60 + (startMinute || 0)
+      const endTime = endHour * 60 + (endMinute || 0)
+
+      // Filter time slots within staff working hours
+      availableSlots = availableSlots.filter(slot => {
+        const slotTime = slot.hour * 60 + slot.minute
+        return slotTime >= startTime && slotTime < endTime
+      })
     }
 
-    // Parse working hours
-    const [startHour, startMinute] = staff.work_start_time.split(':').map(Number)
-    const [endHour, endMinute] = staff.work_end_time.split(':').map(Number)
-    
-    const startTime = startHour * 60 + startMinute
-    const endTime = endHour * 60 + endMinute
-
-    // Filter time slots within working hours
-    return timeSlots.filter(slot => {
-      const slotTime = slot.hour * 60 + slot.minute
-      return slotTime >= startTime && slotTime < endTime
-    })
+    return availableSlots
   }
 
   const prevDay = () => {
@@ -413,19 +444,9 @@ export default function AppointmentCalendar({
 
               {/* Time slots and appointments */}
               {(() => {
-                // Get all unique time slots from all staff working hours
-                const allTimeSlots = new Set<string>()
-                dayStaff.forEach(staff => {
-                  const staffTimeSlots = getTimeSlotsForStaff(staff)
-                  staffTimeSlots.forEach(slot => {
-                    allTimeSlots.add(`${slot.hour}-${slot.minute}`)
-                  })
-                })
-                
-                // If no staff or no working hours, use all time slots
-                const slotsToShow = dayStaff.length > 0 && allTimeSlots.size > 0
-                  ? timeSlots.filter(slot => allTimeSlots.has(`${slot.hour}-${slot.minute}`))
-                  : timeSlots
+                // Always show all salon hours (timeSlots already filtered by salon opening/closing times)
+                // Staff-specific filtering happens in individual cells
+                const slotsToShow = timeSlots
 
                 return slotsToShow.map((timeSlot) => {
                   const timeDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
@@ -443,12 +464,25 @@ export default function AppointmentCalendar({
                           const staffTimeSlots = getTimeSlotsForStaff(staff)
                           const isInWorkingHours = staffTimeSlots.some(s => s.hour === timeSlot.hour && s.minute === timeSlot.minute)
                           
+                          // Show gray cell if outside staff working hours, but still allow interaction
+                          // (salon hours are always shown, staff hours are just visual indication)
                           if (!isInWorkingHours && staff.work_start_time && staff.work_end_time) {
-                            // Show empty gray cell if outside working hours
+                            const clickDate = setMinutes(setHours(startOfDay(selectedDay), timeSlot.hour), timeSlot.minute)
+                            const isPastTime = clickDate < new Date()
+                            
                             return (
                               <div
                                 key={staff.id}
-                                className="border border-gray-200 p-1 min-h-[30px] bg-gray-50"
+                                className={`border border-gray-200 p-1 min-h-[30px] bg-gray-100 opacity-60 ${
+                                  isPastTime ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-200'
+                                }`}
+                                onClick={() => {
+                                  if (isPastTime) {
+                                    return
+                                  }
+                                  onDateClick(clickDate, staff.id)
+                                }}
+                                title="Personel çalışma saatleri dışında"
                               />
                             )
                           }

@@ -56,11 +56,31 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedStaffId, setSelectedStaffId] = useState<string | undefined>(undefined)
+  const [salonHours, setSalonHours] = useState<{ opening_time: string | null; closing_time: string | null }>({
+    opening_time: null,
+    closing_time: null,
+  })
 
   useEffect(() => {
     loadAppointments()
     loadStaff()
+    loadSalonHours()
   }, [dateFilter, statusFilter])
+
+  const loadSalonHours = async () => {
+    const { data } = await supabase
+      .from('salons')
+      .select('opening_time, closing_time')
+      .eq('id', profile.salon_id)
+      .single()
+
+    if (data) {
+      setSalonHours({
+        opening_time: data.opening_time,
+        closing_time: data.closing_time,
+      })
+    }
+  }
 
   const loadStaff = async () => {
     const { data } = await supabase
@@ -318,6 +338,8 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
             return true
           })}
           staffList={staffList}
+          openingTime={salonHours.opening_time}
+          closingTime={salonHours.closing_time}
           onDateClick={(date, staffId) => {
             setSelectedDate(date)
             setSelectedStaffId(staffId)
