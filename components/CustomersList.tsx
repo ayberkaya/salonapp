@@ -157,19 +157,20 @@ export default function CustomersList({
           {filteredCustomers.map((customer) => (
             <Card
               key={customer.id}
-              className="p-4 transition-all hover:shadow-md"
+              className="transition-all hover:shadow-md"
+              style={{ padding: '12.8px' }}
             >
               <div className="flex items-center justify-between">
                 <div 
                   className="flex-1 cursor-pointer"
                   onClick={() => router.push(`/customers/${customer.id}`)}
                 >
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900">
                     {customer.full_name}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-600">{customer.phone}</p>
+                  <p className="mt-0.5 text-xs text-gray-600">{customer.phone}</p>
                   {customer.last_visit_at && (
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-0.5 text-xs text-gray-500">
                       Son ziyaret: {new Date(customer.last_visit_at).toLocaleDateString('tr-TR')}
                     </p>
                   )}
