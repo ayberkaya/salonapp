@@ -49,7 +49,6 @@ export default function UserMenu({ profile }: { profile: Profile }) {
         </div>
         <div className="hidden sm:block text-left">
           <p className="text-sm font-medium text-gray-900">{profile.full_name}</p>
-          <p className="text-xs text-gray-500">{profile.role === 'OWNER' ? 'Sahip' : 'Personel'}</p>
         </div>
         <ChevronDown className={cn('h-4 w-4 text-gray-400 transition-transform', isOpen && 'rotate-180')} />
       </button>
@@ -59,7 +58,6 @@ export default function UserMenu({ profile }: { profile: Profile }) {
           <div className="py-1">
             <div className="border-b border-gray-100 px-4 py-3 sm:hidden">
               <p className="text-sm font-medium text-gray-900">{profile.full_name}</p>
-              <p className="text-xs text-gray-500">{profile.role === 'OWNER' ? 'Sahip' : 'Personel'}</p>
             </div>
             
             <Link
