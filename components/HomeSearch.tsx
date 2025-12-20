@@ -348,7 +348,8 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
           </button>
         </Card>
-        <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+        {/* Hızlı Ziyaret butonu şimdilik pasif */}
+        {/* <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
           <button
             onClick={() => {
               // Her zaman müşteri seçim modalını aç
@@ -366,7 +367,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
           </button>
-        </Card>
+        </Card> */}
         <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
           <button
             onClick={() => setShowInvoiceModal(true)}
