@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { Search, Plus, Calendar, Users, Clock, X, ArrowRight, Home } from 'lucide-react'
+import { Search, Plus, Calendar, Users, Clock, X, ArrowRight, Home, Receipt } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
@@ -15,6 +15,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import { LoadingSkeleton, CustomerCardSkeleton } from '@/components/ui/LoadingSkeleton'
 import Modal from '@/components/ui/Modal'
 import { getAppUrl } from '@/lib/utils'
+import InvoiceModal from '@/components/InvoiceModal'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -294,7 +295,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -346,6 +347,21 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
             <div className="text-center">
               <p className="text-xl font-bold">Hızlı Ziyaret</p>
               <p className="mt-1 text-sm text-gray-300">Anında başlat</p>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
+          </button>
+        </Card>
+        <Card className="group relative overflow-hidden p-0 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+          <button
+            onClick={() => setShowInvoiceModal(true)}
+            className="relative flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-green-600 via-green-500 to-emerald-600 p-8 text-white transition-all duration-300 hover:from-green-700 hover:via-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30">
+              <Receipt className="h-7 w-7" />
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold">Adisyon Ekle</p>
+              <p className="mt-1 text-sm text-green-100">Hesap oluştur</p>
             </div>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 shimmer-effect" />
           </button>
@@ -424,6 +440,16 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
             setQuickVisitCustomer(null)
             setSelectedServices([])
           }}
+        />
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && (
+        <InvoiceModal
+          isOpen={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          salonId={profile.salon_id}
+          profileId={profile.id}
         />
       )}
     </div>
