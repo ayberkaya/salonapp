@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle, Copy, Star } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle, Copy, Star, FileText } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -120,6 +120,7 @@ export default function CustomerDetail({
           birth_day: editedCustomer.birth_day || null,
           birth_month: editedCustomer.birth_month || null,
           hair_color: editedCustomer.hair_color || null,
+          notes: editedCustomer.notes || null,
         })
         .eq('id', customer.id)
 
@@ -321,6 +322,21 @@ export default function CustomerDetail({
                   placeholder="Örn: 6.3 açık karamel"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notlar
+                </label>
+                <textarea
+                  value={editedCustomer.notes || ''}
+                  onChange={(e) => setEditedCustomer({ ...editedCustomer, notes: e.target.value })}
+                  placeholder="Müşteri hakkında notlar... (Örn: Türk kahvesini tek şekerli içer)"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-blue-500 focus:ring-blue-500 min-h-[100px] resize-y"
+                  rows={4}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Bu notlar sadece salon personeli tarafından görülebilir
+                </p>
+              </div>
               <div className="flex gap-2 pt-2">
                 <Button
                   onClick={handleSave}
@@ -472,6 +488,23 @@ export default function CustomerDetail({
           </Button>
         </div>
       </Card>
+
+      {/* Notes Card */}
+      {(customer as any).notes && (
+        <Card className="border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-yellow-50 p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+              <FileText className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Notlar</h3>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                {(customer as any).notes}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Loyalty Level Card */}
       {(() => {
