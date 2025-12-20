@@ -550,7 +550,7 @@ export default function AppointmentModal({
       onClose={handleClose}
       title={appointment ? 'Randevu Düzenle' : 'Yeni Randevu'}
     >
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* Customer Search */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -636,8 +636,8 @@ export default function AppointmentModal({
         <div className="space-y-3">
           <label className="block text-sm font-semibold text-gray-900">Personel ve Hizmetler</label>
           {serviceRows.map((row, index) => (
-            <div key={row.id} className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
-              <div className="flex-1 grid grid-cols-2 gap-3">
+            <div key={row.id} className="flex flex-col sm:flex-row items-start gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                 {/* Staff Dropdown */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Personel</label>
@@ -792,17 +792,17 @@ export default function AppointmentModal({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-col sm:flex-row gap-2 pt-2">
           <Button
             variant="ghost"
             onClick={handleClose}
-            className="flex-1"
+            className="flex-1 min-h-[44px]"
             disabled={saving}
           >
             <X className="mr-2 h-4 w-4" />
             İptal
           </Button>
-          <Button onClick={handleSave} className="flex-1" disabled={saving}>
+          <Button onClick={handleSave} className="flex-1 min-h-[44px]" disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Kaydediliyor...' : 'Kaydet'}
           </Button>

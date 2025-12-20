@@ -84,7 +84,7 @@ export function getLoyaltyDiscount(level: LoyaltyLevel, salonDiscounts?: {
       case 'VIP':
         return salonDiscounts.loyalty_vip_discount ?? LOYALTY_LEVELS.VIP.discount
       default:
-        return LOYALTY_LEVELS[level].discount
+        return LOYALTY_LEVELS[level as LoyaltyLevel].discount
     }
   }
   return LOYALTY_LEVELS[level].discount;
@@ -110,7 +110,7 @@ export function getLoyaltyLevelInfo(
   const discount = getLoyaltyDiscount(level, salonDiscounts)
   
   // Calculate minVisits based on salon thresholds
-  let minVisits = baseInfo.minVisits
+  let minVisits: number = baseInfo.minVisits
   if (salonThresholds) {
     switch (level) {
       case 'SILVER':
@@ -129,7 +129,7 @@ export function getLoyaltyLevelInfo(
   }
   
   // Calculate maxVisits based on next level's minVisits
-  let maxVisits = baseInfo.maxVisits
+  let maxVisits: number = baseInfo.maxVisits
   if (salonThresholds && maxVisits !== Infinity) {
     const nextLevel = getNextLevel(level)
     if (nextLevel) {

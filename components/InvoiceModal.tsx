@@ -834,7 +834,7 @@ export default function InvoiceModal({
   return (
     <>
     <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Adisyon" size="lg">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Customer Selection */}
         <div className="relative" data-customer-dropdown>
           <label className="block text-sm font-semibold text-gray-900 mb-2">Müşteri</label>
@@ -984,8 +984,8 @@ export default function InvoiceModal({
         <div className="space-y-3">
           <label className="block text-sm font-semibold text-gray-900">Personel ve Hizmetler</label>
           {serviceRows.map((row, index) => (
-            <div key={row.id} className="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
-              <div className="flex-1 grid grid-cols-2 gap-3">
+            <div key={row.id} className="flex flex-col sm:flex-row items-start gap-3 p-3 sm:p-4 border-2 border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                 {/* Staff Dropdown */}
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Personel</label>
@@ -1061,7 +1061,7 @@ export default function InvoiceModal({
           <Button
             onClick={handleAddServiceRow}
             variant="ghost"
-            className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 h-9 text-sm"
+            className="w-full border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 min-h-[44px] text-sm"
           >
             <Plus className="mr-2 h-3.5 w-3.5" />
             Personel/Hizmet ekle
@@ -1072,7 +1072,8 @@ export default function InvoiceModal({
         {invoiceServices.length > 0 && (
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-gray-900">Seçilen Hizmetler</label>
-            <div className="rounded-lg border-2 border-gray-200 overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden sm:block rounded-lg border-2 border-gray-200 overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -1107,7 +1108,7 @@ export default function InvoiceModal({
                       <td className="px-4 py-1 text-center">
                         <button
                           onClick={() => handleRemoveService(service.id)}
-                          className="rounded-lg p-1 text-red-600 hover:bg-red-50 transition-colors"
+                          className="rounded-lg p-1 min-w-[44px] min-h-[44px] flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1117,13 +1118,48 @@ export default function InvoiceModal({
                 </tbody>
               </table>
             </div>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-3">
+              {invoiceServices.map((service) => (
+                <div key={service.id} className="rounded-lg border-2 border-gray-200 p-3 bg-gray-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{service.service_name}</p>
+                      <p className="text-xs text-gray-600 mt-1">{service.staff_name || 'Personel yok'}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveService(service.id)}
+                      className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Tutar:</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={service.unit_price}
+                        onChange={(e) =>
+                          handleServicePriceChange(service.id, parseFloat(e.target.value) || 0)
+                        }
+                        className="w-24 text-right font-semibold text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        step="0.01"
+                        min="0"
+                      />
+                      <span className="text-xs text-gray-600">₺</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Discount Section */}
         <div className="space-y-2 pt-3 border-t-2 border-gray-200">
           <label className="block text-xs font-semibold text-gray-900">İndirim</label>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={discountType}
               onChange={(e) => setDiscountType(e.target.value as any)}
@@ -1135,19 +1171,19 @@ export default function InvoiceModal({
             </select>
             
             {discountType === 'percentage' && (
-              <div className="flex-1 flex items-center gap-2">
+              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Input
                   type="number"
                   value={discountPercentage}
                   onChange={(e) =>
                     setDiscountPercentage(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))
                   }
-                  className="w-24 text-sm"
+                  className="w-full sm:w-24 text-sm min-h-[44px]"
                   placeholder="%"
                   min="0"
                   max="100"
                 />
-                <span className="text-xs text-gray-600">Manuel İndirim: {(() => {
+                <span className="text-xs text-gray-600 self-center">Manuel İndirim: {(() => {
                   const { manualDiscountAmount } = calculateTotals()
                   return manualDiscountAmount.toFixed(2)
                 })()} ₺</span>
@@ -1155,12 +1191,12 @@ export default function InvoiceModal({
             )}
             
             {discountType === 'code' && (
-              <div className="flex-1 flex items-center gap-2">
+              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Input
                   type="text"
                   value={discountCode}
                   onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                  className="flex-1 text-sm"
+                  className="flex-1 text-sm min-h-[44px]"
                   placeholder="İndirim kodu girin"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -1171,7 +1207,7 @@ export default function InvoiceModal({
                 <Button
                   onClick={handleApplyDiscountCode}
                   size="sm"
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap min-h-[44px]"
                 >
                   Uygula
                 </Button>
@@ -1233,11 +1269,11 @@ export default function InvoiceModal({
         </div>
 
         {/* Save Button */}
-        <div className="flex gap-2 pt-4">
+        <div className="flex flex-col sm:flex-row gap-2 pt-4">
           <Button
             variant="ghost"
             onClick={handleClose}
-            className="flex-1 h-9 text-sm"
+            className="flex-1 min-h-[44px] text-sm"
             disabled={saving}
           >
             İptal
@@ -1245,7 +1281,7 @@ export default function InvoiceModal({
           <Button
             onClick={handleSave}
             disabled={saving || invoiceServices.length === 0}
-            className="flex-1 bg-green-600 hover:bg-green-700 h-9 text-sm"
+            className="flex-1 bg-green-600 hover:bg-green-700 min-h-[44px] text-sm"
           >
             {saving ? 'Kaydediliyor...' : 'Adisyonu Kaydet'}
           </Button>

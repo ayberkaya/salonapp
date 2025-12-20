@@ -160,7 +160,7 @@ export async function POST(request: Request) {
       const { data: salonData } = await supabase
         .from('salons')
         .select('loyalty_silver_min_visits, loyalty_gold_min_visits, loyalty_platinum_min_visits, loyalty_vip_min_visits')
-        .eq('id', salon.id)
+        .eq('id', tokenData.salon_id)
         .single()
       
       const vipThreshold = salonData?.loyalty_vip_min_visits ?? 40

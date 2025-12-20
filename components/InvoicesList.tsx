@@ -321,7 +321,7 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
       {/* Filters */}
       <Card style={{ padding: '19.2px' }}>
         <div className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row w-full">
             <div className="relative flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Search className="h-4 w-4 text-gray-400" />

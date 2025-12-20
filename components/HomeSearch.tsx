@@ -605,7 +605,7 @@ function ServiceSelectModal({
     <Modal isOpen={true} onClose={onClose} title={`İşlem Seç - ${customer.full_name}`}>
       <div className="space-y-4">
         <p className="text-sm text-gray-600">Yaptırılan işlemleri seçin:</p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {availableServices.map((service) => (
             <button
               key={service}

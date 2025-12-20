@@ -403,11 +403,11 @@ export default function CustomerDetail({
                   Bu notlar sadece salon personeli tarafından görülebilir
                 </p>
               </div>
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button
                   onClick={handleSave}
                   disabled={isSaving || !editedCustomer.full_name || !editedCustomer.phone}
-                  className="flex-1"
+                  className="flex-1 min-h-[44px]"
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
@@ -416,7 +416,7 @@ export default function CustomerDetail({
                   variant="ghost"
                   onClick={handleCancel}
                   disabled={isSaving}
-                  className="flex-1"
+                  className="flex-1 min-h-[44px]"
                 >
                   <X className="mr-2 h-4 w-4" />
                   İptal
@@ -463,7 +463,7 @@ export default function CustomerDetail({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
