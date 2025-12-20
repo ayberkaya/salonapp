@@ -4,6 +4,7 @@ import Header from '@/components/layout/Header'
 import { Settings as SettingsIcon } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import StaticRegistrationQR from '@/components/StaticRegistrationQR'
+import StaffManagement from '@/components/StaffManagement'
 
 export default async function SettingsPage() {
   const profile = await getCurrentProfile()
@@ -44,7 +45,10 @@ export default async function SettingsPage() {
           </Card>
 
           {profile.role === 'OWNER' && (
-            <StaticRegistrationQR salonId={profile.salon_id} />
+            <>
+              <StaticRegistrationQR salonId={profile.salon_id} />
+              <StaffManagement salonId={profile.salon_id} profileId={profile.id} />
+            </>
           )}
 
           <Card className="p-6">

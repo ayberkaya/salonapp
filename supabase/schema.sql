@@ -37,6 +37,18 @@ CREATE TABLE customers (
   UNIQUE(salon_id, phone)
 );
 
+-- Staff table (salon employees, cannot login)
+CREATE TABLE staff (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  salon_id UUID NOT NULL REFERENCES salons(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  phone TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_by UUID NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Visits table
 CREATE TABLE visits (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -81,6 +93,7 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visit_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 -- Users can view their own profile OR profiles in their salon (merged for performance)
@@ -174,4 +187,53 @@ CREATE OR REPLACE FUNCTION get_user_salon_id()
 RETURNS UUID AS $$
   SELECT salon_id FROM profiles WHERE id = auth.uid();
 $$ LANGUAGE sql SECURITY DEFINER SET search_path = public;
+
+-- Staff policies
+-- Owners can view all staff in their salon
+CREATE POLICY "Owners can view staff in their salon"
+  ON staff FOR SELECT
+  USING (salon_id = get_user_salon_id());
+
+-- Owners can create staff in their salon
+CREATE POLICY "Owners can create staff in their salon"
+  ON staff FOR INSERT
+  WITH CHECK (
+    salon_id = get_user_salon_id()
+    AND created_by = (select auth.uid())
+  );
+
+-- Owners can update staff in their salon
+CREATE POLICY "Owners can update staff in their salon"
+  ON staff FOR UPDATE
+  USING (
+    salon_id = get_user_salon_id()
+  )
+  WITH CHECK (
+    salon_id = get_user_salon_id()
+  );
+
+-- Owners can delete staff in their salon
+CREATE POLICY "Owners can delete staff in their salon"
+  ON staff FOR DELETE
+  USING (salon_id = get_user_salon_id());
+
+-- Function to update staff updated_at timestamp
+CREATE OR REPLACE FUNCTION update_staff_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = public;
+
+-- Trigger for staff updated_at
+CREATE TRIGGER update_staff_updated_at
+  BEFORE UPDATE ON staff
+  FOR EACH ROW
+  EXECUTE FUNCTION update_staff_updated_at();
+
+-- Indexes for staff
+CREATE INDEX idx_staff_salon_id ON staff(salon_id);
+CREATE INDEX idx_staff_created_by ON staff(created_by);
+CREATE INDEX idx_staff_is_active ON staff(is_active) WHERE is_active = true;
 
