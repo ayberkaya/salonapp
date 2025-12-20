@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/campaigns/send-scheduled",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/campaigns/auto-birthday",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}
+
