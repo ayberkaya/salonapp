@@ -46,9 +46,9 @@ interface AppointmentModalProps {
   profileId: string
   appointment?: {
     id: string
-    customer_id: string
-    staff_id: string | null
-    service_id: string | null
+    customer_id?: string
+    staff_id?: string | null
+    service_id?: string | null
     appointment_date: string
     duration_minutes: number
     status: string
@@ -57,6 +57,7 @@ interface AppointmentModalProps {
     staff?: { full_name: string } | null
     services?: { name: string } | null
   } | null
+  initialDate?: Date | null
 }
 
 export default function AppointmentModal({
@@ -65,6 +66,7 @@ export default function AppointmentModal({
   salonId,
   profileId,
   appointment,
+  initialDate,
 }: AppointmentModalProps) {
   const supabase = createClient()
   const { showToast } = useToast()
@@ -193,9 +195,17 @@ export default function AppointmentModal({
       } else {
         // Creating new appointment
         resetForm()
+        // If initialDate is provided, set it
+        if (initialDate) {
+          setFormData(prev => ({
+            ...prev,
+            appointment_date: initialDate.toISOString().split('T')[0],
+            appointment_time: initialDate.toTimeString().slice(0, 5),
+          }))
+        }
       }
     }
-  }, [isOpen, appointment])
+  }, [isOpen, appointment, initialDate])
 
   useEffect(() => {
     if (customerSearch.length >= 2) {

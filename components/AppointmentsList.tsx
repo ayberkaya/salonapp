@@ -7,9 +7,10 @@ import { useToast } from '@/lib/toast-context'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
-import { Calendar, Clock, User, Scissors, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Calendar, Clock, User, Scissors, Plus, Edit2, Trash2, CheckCircle, XCircle, List } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import AppointmentModal from '@/components/AppointmentModal'
+import AppointmentCalendar from '@/components/AppointmentCalendar'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -49,8 +50,10 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('all')
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
   useEffect(() => {
     loadAppointments()
@@ -76,8 +79,8 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
         `)
         .eq('salon_id', profile.salon_id)
 
-      // Date filter
-      if (dateFilter !== 'all') {
+      // Date filter (only for list view, calendar shows all)
+      if (viewMode === 'list' && dateFilter !== 'all') {
         const now = new Date()
         let startDate: Date
         let endDate: Date
@@ -223,43 +226,95 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
           <h1 className="text-3xl font-bold text-gray-900">Randevular</h1>
           <p className="mt-1 text-gray-600">Randevuları görüntüleyin ve yönetin</p>
         </div>
-        <Button onClick={() => {
-          setEditingAppointment(null)
-          setShowAppointmentModal(true)
-        }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Randevu
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white p-1">
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Calendar className="h-4 w-4" />
+              Takvim
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <List className="h-4 w-4" />
+              Liste
+            </button>
+          </div>
+          <Button onClick={() => {
+            setEditingAppointment(null)
+            setSelectedDate(null)
+            setShowAppointmentModal(true)
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Randevu
+          </Button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <Card className="p-6">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value as any)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tüm Zamanlar</option>
-            <option value="today">Bugün</option>
-            <option value="week">Son 7 Gün</option>
-            <option value="month">Son 30 Gün</option>
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tüm Durumlar</option>
-            <option value="PENDING">Beklemede</option>
-            <option value="CONFIRMED">Onaylandı</option>
-            <option value="COMPLETED">Tamamlandı</option>
-            <option value="CANCELLED">İptal</option>
-          </select>
-        </div>
-      </Card>
+      {/* Filters - Only show in list view */}
+      {viewMode === 'list' && (
+        <Card className="p-6">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tüm Zamanlar</option>
+              <option value="today">Bugün</option>
+              <option value="week">Son 7 Gün</option>
+              <option value="month">Son 30 Gün</option>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tüm Durumlar</option>
+              <option value="PENDING">Beklemede</option>
+              <option value="CONFIRMED">Onaylandı</option>
+              <option value="COMPLETED">Tamamlandı</option>
+              <option value="CANCELLED">İptal</option>
+            </select>
+          </div>
+        </Card>
+      )}
+
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <AppointmentCalendar
+          appointments={appointments.filter(apt => {
+            if (statusFilter !== 'all') {
+              return apt.status === statusFilter
+            }
+            return true
+          })}
+          onDateClick={(date) => {
+            setSelectedDate(date)
+            setEditingAppointment(null)
+            setShowAppointmentModal(true)
+          }}
+          onAppointmentClick={(appointment) => {
+            setEditingAppointment(appointment)
+            setShowAppointmentModal(true)
+          }}
+        />
+      )}
 
       {/* Appointments List */}
+      {viewMode === 'list' && (
       <Card className="p-6">
         <h2 className="mb-4 text-xl font-semibold text-gray-900">Randevu Listesi</h2>
         {loading ? (
@@ -362,6 +417,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
           </div>
         )}
       </Card>
+      )}
 
       {/* Appointment Modal */}
       <AppointmentModal
@@ -369,18 +425,23 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
         onClose={() => {
           setShowAppointmentModal(false)
           setEditingAppointment(null)
+          setSelectedDate(null)
           loadAppointments()
         }}
         salonId={profile.salon_id}
         profileId={profile.id}
         appointment={editingAppointment ? {
           id: editingAppointment.id,
+          customer_id: '',
+          staff_id: null,
+          service_id: null,
           appointment_date: editingAppointment.appointment_date,
           duration_minutes: editingAppointment.duration_minutes,
           status: editingAppointment.status,
           notes: editingAppointment.notes,
           customers: editingAppointment.customers,
         } : null}
+        initialDate={selectedDate}
       />
     </div>
   )
