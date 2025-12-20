@@ -117,14 +117,17 @@ export default function InvoiceModal({
   }, [customerSearch])
 
   useEffect(() => {
+    if (!isOpen) return
+    
     const handleClickOutside = (e: MouseEvent) => {
-      if (showCustomerDropdown) {
+      const target = e.target as HTMLElement
+      if (showCustomerDropdown && !target.closest('[data-customer-dropdown]')) {
         setShowCustomerDropdown(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showCustomerDropdown])
+  }, [showCustomerDropdown, isOpen])
 
   const loadServices = async () => {
     const { data, error } = await supabase
@@ -427,7 +430,7 @@ export default function InvoiceModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="Yeni Adisyon" size="lg">
       <div className="space-y-6">
         {/* Customer Selection */}
-        <div className="relative">
+        <div className="relative" data-customer-dropdown>
           <label className="block text-sm font-semibold text-gray-900 mb-2">Müşteri</label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -444,15 +447,23 @@ export default function InvoiceModal({
                   setSelectedCustomer(null)
                 }
               }}
-              onFocus={() => setShowCustomerDropdown(true)}
+              onFocus={() => {
+                if (customerSearch.length >= 2) {
+                  setShowCustomerDropdown(true)
+                }
+              }}
               className="pl-10 text-black"
             />
             {selectedCustomer && (
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                     setSelectedCustomer(null)
                     setCustomerSearch('')
+                    setShowCustomerDropdown(false)
                   }}
                   className="rounded-full p-1 text-gray-400 hover:text-gray-600"
                 >
@@ -463,27 +474,34 @@ export default function InvoiceModal({
           </div>
           
           {showCustomerDropdown && !selectedCustomer && (customerSearch.length >= 2 || customers.length > 0) && (
-            <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-[100] mt-1 w-full rounded-lg border-2 border-blue-200 bg-white shadow-xl max-h-64 overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-gray-500">Aranıyor...</div>
               ) : customers.length > 0 ? (
-                customers.map((customer) => (
-                  <button
-                    key={customer.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setSelectedCustomer(customer)
-                      setCustomerSearch('')
-                      setShowCustomerDropdown(false)
-                    }}
-                    className="w-full p-4 text-left transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
-                  >
-                    <p className="font-medium text-gray-900">{customer.full_name}</p>
-                    <p className="text-sm text-gray-600">{customer.phone}</p>
-                  </button>
-                ))
+                <div>
+                  {customers.map((customer) => (
+                    <button
+                      key={customer.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log('Customer selected:', customer)
+                        setSelectedCustomer(customer)
+                        setCustomerSearch('')
+                        setShowCustomerDropdown(false)
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      className="w-full p-4 text-left transition-colors hover:bg-blue-50 border-b border-gray-100 last:border-b-0 cursor-pointer"
+                    >
+                      <p className="font-medium text-gray-900">{customer.full_name}</p>
+                      <p className="text-sm text-gray-600">{customer.phone}</p>
+                    </button>
+                  ))}
+                </div>
               ) : customerSearch.length >= 2 ? (
                 <div className="p-4 text-center text-gray-500">Müşteri bulunamadı</div>
               ) : null}
