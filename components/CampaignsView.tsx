@@ -1547,6 +1547,7 @@ export default function CampaignsView({
                 onChange={(e) => setDiscountFormData({ ...discountFormData, code_name: e.target.value })}
                 placeholder="Örn: YAZ2024"
                 autoFocus
+                style={{ paddingTop: '9px', paddingBottom: '9px' }}
               />
             </div>
 
@@ -1561,6 +1562,7 @@ export default function CampaignsView({
                 value={discountFormData.discount_percentage}
                 onChange={(e) => setDiscountFormData({ ...discountFormData, discount_percentage: parseInt(e.target.value) || 0 })}
                 placeholder="10"
+                style={{ paddingTop: '9px', paddingBottom: '9px' }}
               />
             </div>
 
@@ -1573,6 +1575,7 @@ export default function CampaignsView({
                   type="date"
                   value={discountFormData.valid_from}
                   onChange={(e) => setDiscountFormData({ ...discountFormData, valid_from: e.target.value })}
+                  style={{ paddingTop: '9px', paddingBottom: '9px' }}
                 />
               </div>
               <div>
@@ -1583,6 +1586,7 @@ export default function CampaignsView({
                   type="date"
                   value={discountFormData.valid_until}
                   onChange={(e) => setDiscountFormData({ ...discountFormData, valid_until: e.target.value })}
+                  style={{ paddingTop: '9px', paddingBottom: '9px' }}
                 />
               </div>
             </div>
@@ -1597,6 +1601,7 @@ export default function CampaignsView({
                 value={discountFormData.max_usage}
                 onChange={(e) => setDiscountFormData({ ...discountFormData, max_usage: e.target.value })}
                 placeholder="Sınırsız için boş bırakın"
+                style={{ paddingTop: '9px', paddingBottom: '9px' }}
               />
             </div>
 
@@ -1614,6 +1619,7 @@ export default function CampaignsView({
                   }}
                   placeholder="Müşteri ara (isim veya telefon)..."
                   className="pl-10"
+                  style={{ paddingTop: '9px', paddingBottom: '9px' }}
                 />
                 <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 {customerSearch.length >= 2 && discountCustomers.length > 0 && (
