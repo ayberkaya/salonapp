@@ -161,6 +161,84 @@ export async function POST(request: Request) {
       .update({ last_visit_at: new Date().toISOString() })
       .eq('id', customer.id)
 
+    // Calculate new visit count
+    const { count: newVisitCount } = await supabase
+      .from('visits')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_id', customer.id)
+
+    // Update loyalty level based on visit count
+    if (newVisitCount !== null) {
+      const newLevel = newVisitCount >= 30 ? 'PLATINUM' :
+                       newVisitCount >= 20 ? 'GOLD' :
+                       newVisitCount >= 10 ? 'SILVER' : 'BRONZE'
+      
+      // Check if level changed
+      const { data: currentCustomer } = await supabase
+        .from('customers')
+        .select('loyalty_level')
+        .eq('id', customer.id)
+        .single()
+      
+      if (currentCustomer?.loyalty_level !== newLevel) {
+        // Level up! Give discount
+        await supabase
+          .from('customers')
+          .update({
+            loyalty_level: newLevel,
+            has_loyalty_discount: true, // Yeni seviyeye geçince indirim hakkı ver
+          })
+          .eq('id', customer.id)
+      }
+    }
+
+    // Handle referral rewards (if this is referred customer's first visit)
+    if (newVisitCount === 1) {
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('referred_by')
+        .eq('id', customer.id)
+        .single()
+
+      if (customerData?.referred_by) {
+        // This is the first visit for a referred customer
+        // Get referrer's current referral count
+        const { data: referrerData } = await supabase
+          .from('customers')
+          .select('referral_count')
+          .eq('id', customerData.referred_by)
+          .single()
+        
+        const currentCount = referrerData?.referral_count || 0
+        
+        // Give reward to referrer
+        await supabase
+          .from('customers')
+          .update({
+            referral_count: currentCount + 1,
+            has_referral_discount: true, // %15 indirim hakkı
+          })
+          .eq('id', customerData.referred_by)
+        
+        // Give reward to referred customer
+        await supabase
+          .from('customers')
+          .update({
+            has_referral_discount: true, // %15 indirim hakkı
+          })
+          .eq('id', customer.id)
+        
+        // Create referral reward record
+        await supabase
+          .from('referral_rewards')
+          .insert({
+            salon_id: tokenData.salon_id,
+            referrer_id: customerData.referred_by,
+            referred_id: customer.id,
+          })
+      }
+    }
+
     return NextResponse.json({
       success: true,
       customer: {

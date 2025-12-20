@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle, Copy, Star } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -14,6 +14,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Input from '@/components/ui/Input'
 import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
 import { getAppUrl } from '@/lib/utils'
+import { getLoyaltyLevel, LOYALTY_LEVELS, getNextLevel } from '@/lib/loyalty'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Customer = Database['public']['Tables']['customers']['Row']
@@ -471,6 +472,172 @@ export default function CustomerDetail({
           </Button>
         </div>
       </Card>
+
+      {/* Loyalty Level Card */}
+      {(() => {
+        const currentLevel = getLoyaltyLevel(visitCount)
+        const levelInfo = LOYALTY_LEVELS[currentLevel]
+        const nextLevel = getNextLevel(currentLevel)
+        const nextLevelInfo = nextLevel ? LOYALTY_LEVELS[nextLevel] : null
+        const progress = nextLevelInfo 
+          ? Math.min(100, (visitCount / nextLevelInfo.minVisits) * 100)
+          : 100
+
+        return (
+          <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 mb-2">Sadakat Seviyesi</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{levelInfo.icon}</span>
+                  <div>
+                    <p className="text-xl font-bold text-gray-900">{levelInfo.name}</p>
+                    <p className="text-sm text-gray-600">%{levelInfo.discount} indirim hakkı</p>
+                  </div>
+                </div>
+                {nextLevelInfo && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    {nextLevelInfo.minVisits - visitCount} ziyaret sonra {nextLevelInfo.name} seviyesine geç
+                  </p>
+                )}
+                {!nextLevelInfo && (
+                  <p className="mt-2 text-xs text-green-600 font-medium">
+                    En yüksek seviyedesiniz! 🎉
+                  </p>
+                )}
+              </div>
+              <div className="w-32">
+                <div className="h-3 w-full rounded-full bg-gray-200 overflow-hidden">
+                  <div 
+                    className="h-3 rounded-full transition-all"
+                    style={{ 
+                      width: `${progress}%`,
+                      backgroundColor: levelInfo.color 
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 text-center mt-1">
+                  {visitCount} / {nextLevelInfo?.minVisits || '∞'} ziyaret
+                </p>
+              </div>
+            </div>
+            
+            {/* Loyalty Discount Button */}
+            {(customer as any).has_loyalty_discount && !(customer as any).loyalty_discount_used_at && (
+              <Button
+                onClick={async () => {
+                  const confirmed = window.confirm(
+                    `Müşterinin %${levelInfo.discount} sadakat indirimini kullanmak istediğinizden emin misiniz?`
+                  )
+                  if (!confirmed) return
+                  
+                  const { error } = await supabase
+                    .from('customers')
+                    .update({
+                      loyalty_discount_used_at: new Date().toISOString(),
+                    })
+                    .eq('id', customer.id)
+                  
+                  if (error) {
+                    showToast('İndirim kullanılırken bir hata oluştu.', 'error')
+                    console.error('Loyalty discount usage error:', error)
+                  } else {
+                    showToast(`%${levelInfo.discount} sadakat indirimi kullanıldı!`, 'success')
+                    router.refresh()
+                  }
+                }}
+                className="mt-4 w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+              >
+                <Star className="mr-2 h-4 w-4" />
+                %{levelInfo.discount} Sadakat İndirimi Kullan
+              </Button>
+            )}
+            {(customer as any).loyalty_discount_used_at && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                <CheckCircle className="h-4 w-4" />
+                <span>
+                  Kullanıldı: {new Date((customer as any).loyalty_discount_used_at).toLocaleDateString('tr-TR')}
+                </span>
+              </div>
+            )}
+          </Card>
+        )
+      })()}
+
+      {/* Referral Card */}
+      {(customer as any).referral_code && (
+        <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Referans Kodu
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <code className="text-xl font-bold text-purple-600 bg-white px-4 py-2 rounded-lg border-2 border-purple-200">
+                  {(customer as any).referral_code}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const referralLink = `${getAppUrl()}/register?salon_id=${profile.salon_id}&ref=${(customer as any).referral_code}`
+                    navigator.clipboard.writeText(referralLink)
+                    showToast('Referans linki kopyalandı!', 'success')
+                  }}
+                  className="text-purple-600 hover:text-purple-700"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                {(customer as any).referral_count || 0} kişi sizin referansınızla kayıt oldu
+              </p>
+              
+              {/* Referral Discount Button */}
+              {(customer as any).has_referral_discount && !(customer as any).referral_discount_used_at && (
+                <Button
+                  onClick={async () => {
+                    const confirmed = window.confirm(
+                      'Müşterinin %15 referans indirimini kullanmak istediğinizden emin misiniz?'
+                    )
+                    if (!confirmed) return
+                    
+                    const { error } = await supabase
+                      .from('customers')
+                      .update({
+                        referral_discount_used_at: new Date().toISOString(),
+                      })
+                      .eq('id', customer.id)
+                    
+                    if (error) {
+                      showToast('İndirim kullanılırken bir hata oluştu.', 'error')
+                      console.error('Referral discount usage error:', error)
+                    } else {
+                      showToast('%15 referans indirimi kullanıldı!', 'success')
+                      router.refresh()
+                    }
+                  }}
+                  className="w-full bg-purple-600 text-white hover:bg-purple-700"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  %15 Referans İndirimi Kullan
+                </Button>
+              )}
+              {(customer as any).referral_discount_used_at && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>
+                    Kullanıldı: {new Date((customer as any).referral_discount_used_at).toLocaleDateString('tr-TR')}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Welcome Discount Card */}
       {customer.has_welcome_discount && (

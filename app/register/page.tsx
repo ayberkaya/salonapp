@@ -15,6 +15,7 @@ function RegisterForm() {
   const router = useRouter()
   const { showToast } = useToast()
   const salonId = searchParams.get('salon_id')
+  const referralCode = searchParams.get('ref')
   
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -91,6 +92,21 @@ function RegisterForm() {
       // Telefon numarasını +90 ile birleştir
       const fullPhone = `+90${phone}`
 
+      // Check referral code if provided
+      let referredBy = null
+      if (referralCode) {
+        const { data: referrer } = await supabase
+          .from('customers')
+          .select('id, salon_id')
+          .eq('referral_code', referralCode.toUpperCase())
+          .eq('salon_id', salonId)
+          .single()
+        
+        if (referrer) {
+          referredBy = referrer.id
+        }
+      }
+
       const { data, error } = await supabase
         .from('customers')
         .insert({
@@ -103,6 +119,7 @@ function RegisterForm() {
           birth_month: birthMonth ? Number(birthMonth) : null,
           kvkk_consent_at: new Date().toISOString(),
           has_welcome_discount: true, // Hoş geldin indirimi ver
+          referred_by: referredBy, // Referans varsa ekle
         })
         .select()
         .single()
