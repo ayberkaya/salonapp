@@ -554,18 +554,34 @@ export default function InvoiceModal({
                     services={services}
                     selectedServiceIds={row.service_ids}
                     onSelectionChange={(serviceIds) => {
-                      // Remove services that are no longer selected
-                      row.service_ids.forEach(id => {
-                        if (!serviceIds.includes(id)) {
-                          handleServiceToggle(row.id, id, false)
+                      // Update the row with new service selections
+                      setServiceRows(rows => rows.map(r => {
+                        if (r.id === row.id) {
+                          // Find services to add and remove
+                          const servicesToAdd = serviceIds.filter(id => !r.service_ids.includes(id))
+                          const servicesToRemove = r.service_ids.filter(id => !serviceIds.includes(id))
+                          
+                          // Get service details for new services
+                          const newServices = servicesToAdd.map(serviceId => {
+                            const service = services.find(s => s.id === serviceId)
+                            return service ? {
+                              id: serviceId,
+                              name: service.name,
+                              price: service.default_price
+                            } : null
+                          }).filter(Boolean) as Array<{ id: string; name: string; price: number }>
+                          
+                          return {
+                            ...r,
+                            service_ids: serviceIds,
+                            services: [
+                              ...r.services.filter(s => !servicesToRemove.includes(s.id)),
+                              ...newServices
+                            ]
+                          }
                         }
-                      })
-                      // Add newly selected services
-                      serviceIds.forEach(id => {
-                        if (!row.service_ids.includes(id)) {
-                          handleServiceToggle(row.id, id, true)
-                        }
-                      })
+                        return r
+                      }))
                     }}
                     placeholder="Hizmet seçin"
                   />
