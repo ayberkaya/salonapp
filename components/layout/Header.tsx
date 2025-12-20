@@ -59,8 +59,21 @@ export default function Header({ profile }: { profile: Profile }) {
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo and Desktop Navigation */}
+          {/* Logo, Mobile Menu Button and Desktop Navigation */}
           <div className="flex items-center gap-4">
+            {/* Mobile Menu Button - Only visible on mobile */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+
             <Link href="/home" className="cursor-pointer">
               <h1 className="text-xl font-bold text-gray-900 hover:text-gray-700 transition-colors">Kuaför CRM</h1>
             </Link>
@@ -89,24 +102,8 @@ export default function Header({ profile }: { profile: Profile }) {
             </nav>
           </div>
 
-          {/* Mobile Menu Button and User Menu */}
-          <div className="flex items-center gap-2">
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </button>
-
-            {/* User Menu */}
-            <UserMenu profile={profile} />
-          </div>
+          {/* User Menu */}
+          <UserMenu profile={profile} />
         </div>
 
         {/* Mobile Navigation Menu */}
