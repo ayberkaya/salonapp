@@ -90,8 +90,8 @@ function CheckInContent() {
               </svg>
             </div>
           </div>
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">Ziyaret Onaylandı!</h1>
-          <p className="text-lg text-gray-600">Teşekkür ederiz.</p>
+          <h1 className="mb-2 text-3xl font-bold text-gray-900">Ziyaretiniz Onaylandı!</h1>
+          <p className="text-lg text-gray-600">Bizi tercih ettiğiniz için teşekkür ederiz.</p>
         </div>
       </div>
     )

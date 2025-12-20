@@ -55,6 +55,8 @@ export type Database = {
           kvkk_consent_at: string | null
           created_at: string
           last_visit_at: string | null
+          has_welcome_discount: boolean | null
+          welcome_discount_used_at: string | null
         }
         Insert: {
           id?: string
@@ -69,6 +71,8 @@ export type Database = {
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null
+          has_welcome_discount?: boolean | null
+          welcome_discount_used_at?: string | null
         }
         Update: {
           id?: string
@@ -83,6 +87,8 @@ export type Database = {
           kvkk_consent_at?: string | null
           created_at?: string
           last_visit_at?: string | null
+          has_welcome_discount?: boolean | null
+          welcome_discount_used_at?: string | null
         }
       }
       visits: {

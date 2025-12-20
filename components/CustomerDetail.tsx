@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
 import { useToast } from '@/lib/toast-context'
-import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, Clock, QrCode, Edit2, Save, X, Scissors, Gift, CheckCircle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -39,6 +39,7 @@ export default function CustomerDetail({
   const { showToast } = useToast()
   const [showQRModal, setShowQRModal] = useState(false)
   const [qrToken, setQrToken] = useState<string | null>(null)
+  const [tokenId, setTokenId] = useState<string | null>(null)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<Date | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -124,6 +125,7 @@ export default function CustomerDetail({
 
     if (!error && data) {
       setQrToken(tokenValue)
+      setTokenId(data.id)
       setExpiresAt(expiresAtDate)
       const baseUrl = getAppUrl()
       const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}`
@@ -428,6 +430,68 @@ export default function CustomerDetail({
         </div>
       </Card>
 
+      {/* Welcome Discount Card */}
+      {customer.has_welcome_discount && (
+        <Card className="rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500">
+                <Gift className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="mb-1 text-lg font-semibold text-gray-900">
+                  Hoş Geldin İndirimi
+                </h3>
+                <p className="mb-3 text-sm text-gray-600">
+                  {customer.welcome_discount_used_at
+                    ? 'Bu indirim kullanılmış.'
+                    : 'Müşteriniz %15 hoş geldin indirimi kazanmış. İstediği zaman kullanabilir.'}
+                </p>
+                {!customer.welcome_discount_used_at && (
+                  <Button
+                    variant="secondary"
+                    onClick={async () => {
+                      const confirmed = window.confirm(
+                        'Müşterinin %15 hoş geldin indirimini kullanmak istediğinizden emin misiniz?'
+                      )
+                      if (!confirmed) return
+
+                      const { error } = await supabase
+                        .from('customers')
+                        .update({
+                          welcome_discount_used_at: new Date().toISOString(),
+                        })
+                        .eq('id', customer.id)
+
+                      if (error) {
+                        showToast('İndirim kullanılırken bir hata oluştu.', 'error')
+                        console.error('Discount usage error:', error)
+                      } else {
+                        showToast('İndirim başarıyla kullanıldı!', 'success')
+                        // Refresh page to show updated status
+                        router.refresh()
+                      }
+                    }}
+                    className="bg-green-600 text-white hover:bg-green-700"
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    İndirimi Kullan
+                  </Button>
+                )}
+                {customer.welcome_discount_used_at && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      Kullanıldı: {new Date(customer.welcome_discount_used_at).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Visit History */}
       <div>
         <div className="mb-4 flex items-center justify-between">
@@ -486,14 +550,17 @@ export default function CustomerDetail({
       </div>
 
       {/* QR Modal */}
-      {showQRModal && qrUrl && (
+      {showQRModal && qrUrl && qrToken && tokenId && (
         <QRModal
           customerName={customer.full_name}
           qrUrl={qrUrl}
+          qrToken={qrToken}
+          tokenId={tokenId}
           expiresAt={expiresAt}
           onClose={() => {
             setShowQRModal(false)
             setQrToken(null)
+            setTokenId(null)
             setQrUrl(null)
             setExpiresAt(null)
           }}
@@ -507,18 +574,24 @@ export default function CustomerDetail({
 function QRModal({
   customerName,
   qrUrl,
+  qrToken,
+  tokenId,
   expiresAt,
   onClose,
   onRegenerate,
 }: {
   customerName: string
   qrUrl: string
+  qrToken: string
+  tokenId: string
   expiresAt: Date | null
   onClose: () => void
   onRegenerate: () => void
 }) {
+  const supabase = createClient()
+  const { showToast } = useToast()
   const [timeRemaining, setTimeRemaining] = useState(0)
-  const [status, setStatus] = useState<'waiting' | 'expired'>('waiting')
+  const [status, setStatus] = useState<'waiting' | 'expired' | 'confirmed'>('waiting')
 
   useEffect(() => {
     if (!expiresAt) return
@@ -537,6 +610,32 @@ function QRModal({
 
     return () => clearInterval(interval)
   }, [expiresAt])
+
+  // Poll for token usage status
+  useEffect(() => {
+    if (!qrToken || status !== 'waiting') return
+
+    const checkTokenStatus = async () => {
+      const { data, error } = await supabase
+        .from('visit_tokens')
+        .select('used_at')
+        .eq('token', qrToken)
+        .single()
+
+      if (!error && data && data.used_at) {
+        // Token has been used - show success and close modal
+        setStatus('confirmed')
+        showToast('Ziyaret başarıyla onaylandı!', 'success')
+        setTimeout(() => {
+          onClose()
+        }, 2000) // Close after 2 seconds
+      }
+    }
+
+    // Check every 2 seconds
+    const interval = setInterval(checkTokenStatus, 2000)
+    return () => clearInterval(interval)
+  }, [qrToken, status, onClose, showToast, supabase])
 
   const formatTime = (seconds: number) => {
     return `${seconds}s`
@@ -578,11 +677,37 @@ function QRModal({
                 <div
                   className="h-full bg-blue-500 transition-all duration-1000"
                   style={{
-                    width: `${(timeRemaining / 60) * 100}%`,
+                    width: `${(timeRemaining / 90) * 100}%`,
                   }}
                 />
               </div>
             </>
+          ) : status === 'confirmed' ? (
+            <div className="text-center">
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500">
+                  <svg
+                    className="h-10 w-10 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-2xl font-semibold text-green-400">
+                Ziyaret Onaylandı!
+              </p>
+              <p className="mt-2 text-gray-300">
+                Modal kapanıyor...
+              </p>
+            </div>
           ) : (
             <div className="text-center">
               <p className="text-2xl font-semibold text-yellow-400">

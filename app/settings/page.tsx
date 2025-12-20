@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/lib/auth'
-import Nav from '@/components/layout/Nav'
+import Header from '@/components/layout/Header'
 import { Settings as SettingsIcon } from 'lucide-react'
 import Card from '@/components/ui/Card'
+import StaticRegistrationQR from '@/components/StaticRegistrationQR'
 
 export default async function SettingsPage() {
   const profile = await getCurrentProfile()
@@ -13,7 +14,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Nav profile={profile} />
+      <Header profile={profile} />
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="flex items-center gap-3">
@@ -41,6 +42,10 @@ export default async function SettingsPage() {
               </div>
             </div>
           </Card>
+
+          {profile.role === 'OWNER' && (
+            <StaticRegistrationQR salonId={profile.salon_id} />
+          )}
 
           <Card className="p-6">
             <h2 className="mb-4 text-xl font-semibold text-gray-900">Salon Ayarları</h2>

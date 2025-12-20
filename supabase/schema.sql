@@ -31,6 +31,8 @@ CREATE TABLE customers (
   kvkk_consent_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_visit_at TIMESTAMP WITH TIME ZONE,
+  has_welcome_discount BOOLEAN DEFAULT false,
+  welcome_discount_used_at TIMESTAMP WITH TIME ZONE,
   UNIQUE(salon_id, phone)
 );
 

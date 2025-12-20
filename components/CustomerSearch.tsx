@@ -69,6 +69,7 @@ export default function CustomerSearch({ profile, showCreateButton = true }: { p
         birth_day: birthDay || null,
         birth_month: birthMonth || null,
         kvkk_consent_at: new Date().toISOString(),
+        has_welcome_discount: true, // Hoş geldin indirimi ver
       })
       .select()
       .single()
@@ -371,6 +372,7 @@ function VisitSessionModal({
   onClose: () => void
 }) {
   const [token, setToken] = useState<string | null>(null)
+  const [tokenId, setTokenId] = useState<string | null>(null)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<Date | null>(null)
   const supabase = createClient()
@@ -393,6 +395,7 @@ function VisitSessionModal({
 
     if (!error && data) {
       setToken(tokenValue)
+      setTokenId(data.id)
       setExpiresAt(expiresAtDate)
       const baseUrl = getAppUrl()
       const checkinUrl = `${baseUrl}/checkin?token=${tokenValue}`
@@ -407,6 +410,28 @@ function VisitSessionModal({
   useEffect(() => {
     generateVisitToken()
   }, [])
+
+  // Poll for token usage status
+  useEffect(() => {
+    if (!token) return
+
+    const checkTokenStatus = async () => {
+      const { data, error } = await supabase
+        .from('visit_tokens')
+        .select('used_at')
+        .eq('token', token)
+        .single()
+
+      if (!error && data && data.used_at) {
+        // Token has been used - close modal
+        onClose()
+      }
+    }
+
+    // Check every 2 seconds
+    const interval = setInterval(checkTokenStatus, 2000)
+    return () => clearInterval(interval)
+  }, [token, onClose, supabase])
 
   const timeRemaining = expiresAt
     ? Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000))

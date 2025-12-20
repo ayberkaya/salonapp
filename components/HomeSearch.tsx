@@ -125,6 +125,7 @@ export default function HomeSearch({ profile, todayVisits, recentCustomers: init
         full_name: capitalizeWords(name),
         phone: phone.trim(),
         kvkk_consent_at: new Date().toISOString(),
+        has_welcome_discount: true, // Hoş geldin indirimi ver
       }
       
       // Add optional fields if provided
@@ -487,7 +488,9 @@ function QuickVisitModal({
   onClose: () => void
 }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [qrToken, setQrToken] = useState<string | null>(null)
+  const [tokenId, setTokenId] = useState<string | null>(null)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<Date | null>(null)
   const [timeRemaining, setTimeRemaining] = useState(0)
@@ -512,6 +515,7 @@ function QuickVisitModal({
 
       if (!error && data) {
         setQrToken(tokenValue)
+        setTokenId(data.id)
         setExpiresAt(expiresAtDate)
         const baseUrl = getAppUrl()
         const fullUrl = `${baseUrl}/checkin?token=${tokenValue}`
@@ -538,6 +542,29 @@ function QuickVisitModal({
     const interval = setInterval(updateTime, 1000)
     return () => clearInterval(interval)
   }, [expiresAt])
+
+  // Poll for token usage status
+  useEffect(() => {
+    if (!tokenId || !qrToken) return
+
+    const checkTokenStatus = async () => {
+      const { data, error } = await supabase
+        .from('visit_tokens')
+        .select('used_at')
+        .eq('token', qrToken)
+        .single()
+
+      if (!error && data && data.used_at) {
+        // Token has been used - close modal and show success message
+        showToast('Ziyaret başarıyla onaylandı!', 'success')
+        onClose()
+      }
+    }
+
+    // Check every 2 seconds
+    const interval = setInterval(checkTokenStatus, 2000)
+    return () => clearInterval(interval)
+  }, [tokenId, qrToken, onClose, showToast])
 
   const handleHomeClick = () => {
     onClose() // Modal'ı kapat
