@@ -70,6 +70,12 @@ export default function CampaignsView({
   const [templateMessage, setTemplateMessage] = useState('')
   const [templateType, setTemplateType] = useState<'MANUAL' | 'BIRTHDAY' | 'ANNIVERSARY' | 'INACTIVE' | 'CUSTOM'>('MANUAL')
   
+  // New campaign flow state
+  const [messageType, setMessageType] = useState<'manual' | 'template' | null>(null)
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null)
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  
   // Data state
   const [templates, setTemplates] = useState<CampaignTemplate[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -149,10 +155,10 @@ export default function CampaignsView({
   }
 
   const handleSelectAll = () => {
-    if (selectedCustomers.size === inactiveCustomers.length) {
+    if (selectedCustomers.size === filteredCustomers.length) {
       setSelectedCustomers(new Set())
     } else {
-      setSelectedCustomers(new Set(inactiveCustomers.map((c) => c.id)))
+      setSelectedCustomers(new Set(filteredCustomers.map((c) => c.id)))
     }
   }
 
@@ -160,6 +166,101 @@ export default function CampaignsView({
     setSelectedTemplate(template.id)
     setCampaignMessage(template.message)
     setTemplateType(template.campaign_type)
+  }
+
+  const handleMessageTypeSelect = (type: 'manual' | 'template') => {
+    setMessageType(type)
+    if (type === 'template' && templates.length > 0) {
+      handleTemplateSelect(templates[0])
+    }
+  }
+
+  const handleFilterChange = async (filterType: string) => {
+    setSelectedFilter(filterType)
+    setLoadingCustomers(true)
+    setSelectedCustomers(new Set())
+
+    try {
+      let customers: Customer[] = []
+
+      switch (filterType) {
+        case 'inactive_30':
+          // 30 gündür gelmeyenler
+          const thirtyDaysAgo = new Date()
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+          const { data: inactive } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('salon_id', profile.salon_id)
+            .or(`last_visit_at.is.null,last_visit_at.lt.${thirtyDaysAgo.toISOString()}`)
+            .order('last_visit_at', { ascending: true, nullsFirst: true })
+          customers = inactive || []
+          break
+
+        case 'this_week':
+          // Bu hafta gelenler
+          const weekStart = new Date()
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+          weekStart.setHours(0, 0, 0, 0)
+          const { data: thisWeek } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('salon_id', profile.salon_id)
+            .gte('last_visit_at', weekStart.toISOString())
+            .order('last_visit_at', { ascending: false })
+          customers = thisWeek || []
+          break
+
+        case 'visit_4_of_5':
+          // 5 ziyaret kampanyasından 4'ünü doldurmuş olanlar (4-5 ziyaret arası)
+          const { data: visits } = await supabase
+            .from('visits')
+            .select('customer_id, customers(*)')
+            .eq('salon_id', profile.salon_id)
+
+          if (visits) {
+            const visitCounts = new Map<string, { customer: Customer; count: number }>()
+            visits.forEach((visit: any) => {
+              const customerId = visit.customer_id
+              const customer = Array.isArray(visit.customers)
+                ? (visit.customers[0] as unknown as Customer)
+                : (visit.customers as unknown as Customer)
+              if (customer) {
+                if (visitCounts.has(customerId)) {
+                  visitCounts.get(customerId)!.count++
+                } else {
+                  visitCounts.set(customerId, { customer, count: 1 })
+                }
+              }
+            })
+
+            customers = Array.from(visitCounts.values())
+              .filter((item) => item.count >= 4 && item.count < 5)
+              .map((item) => item.customer)
+          }
+          break
+
+        case 'all':
+          // Tüm müşteriler
+          const { data: all } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('salon_id', profile.salon_id)
+            .order('created_at', { ascending: false })
+          customers = all || []
+          break
+
+        default:
+          customers = []
+      }
+
+      setFilteredCustomers(customers)
+    } catch (error) {
+      console.error('Error loading filtered customers:', error)
+      showToast('Müşteriler yüklenirken hata oluştu', 'error')
+    } finally {
+      setLoadingCustomers(false)
+    }
   }
 
   const handleSaveTemplate = async () => {
@@ -242,7 +343,7 @@ export default function CampaignsView({
     }
 
     setSending(true)
-    const selected = inactiveCustomers.filter((c) => selectedCustomers.has(c.id))
+    const selected = filteredCustomers.filter((c) => selectedCustomers.has(c.id))
     const campaignNameFinal = campaignName.trim() || `Kampanya ${new Date().toLocaleDateString('tr-TR')}`
 
     try {
@@ -352,7 +453,7 @@ export default function CampaignsView({
     }
 
     setSending(true)
-    const selected = inactiveCustomers.filter((c) => selectedCustomers.has(c.id))
+    const selected = filteredCustomers.filter((c) => selectedCustomers.has(c.id))
     const campaignNameFinal = campaignName.trim() || `Zamanlanmış Kampanya ${scheduledDateTime.toLocaleDateString('tr-TR')}`
 
     try {
@@ -482,128 +583,213 @@ export default function CampaignsView({
       {/* Create Campaign Tab */}
       {activeTab === 'create' && (
         <div className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Inactive Customers */}
+          {/* Step 1: Message Selection */}
+          {!messageType && (
+            <Card className="p-6">
+              <h2 className="mb-4 text-xl font-semibold text-gray-900">Mesaj Seçimi</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <button
+                  onClick={() => handleMessageTypeSelect('manual')}
+                  className="flex flex-col items-center justify-center rounded-lg border-2 border-gray-200 p-8 transition-all hover:border-blue-500 hover:bg-blue-50"
+                >
+                  <MessageSquare className="mb-3 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">Manuel Yaz</h3>
+                  <p className="text-sm text-gray-600">Kampanya mesajınızı kendiniz yazın</p>
+                </button>
+                <button
+                  onClick={() => handleMessageTypeSelect('template')}
+                  disabled={templates.length === 0}
+                  className="flex flex-col items-center justify-center rounded-lg border-2 border-gray-200 p-8 transition-all hover:border-blue-500 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="mb-3 h-12 w-12 text-gray-400" />
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">Şablon Seç</h3>
+                  <p className="text-sm text-gray-600">
+                    {templates.length === 0 ? 'Henüz şablon yok' : `${templates.length} şablon mevcut`}
+                  </p>
+                </button>
+              </div>
+            </Card>
+          )}
+
+          {/* Step 2: Message Input/Template Selection */}
+          {messageType && (
             <Card className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Pasif Müşteriler (30+ gün)
+                  {messageType === 'manual' ? 'Mesaj Yaz' : 'Şablon Seç'}
                 </h2>
-                {inactiveCustomers.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={handleSelectAll}>
-                    {selectedCustomers.size === inactiveCustomers.length
-                      ? 'Seçimi Kaldır'
-                      : 'Tümünü Seç'}
-                  </Button>
-                )}
-              </div>
-              <div className="max-h-96 space-y-2 overflow-y-auto">
-                {inactiveCustomers.length === 0 ? (
-                  <EmptyState
-                    title="Pasif müşteri yok"
-                    description="Tüm müşteriler aktif görünüyor"
-                  />
-                ) : (
-                  inactiveCustomers.map((customer) => (
-                    <div
-                      key={customer.id}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{customer.full_name}</p>
-                        <p className="text-sm text-gray-600">{customer.phone}</p>
-                        {customer.last_visit_at && (
-                          <p className="text-xs text-gray-500">
-                            Son ziyaret: {new Date(customer.last_visit_at).toLocaleDateString('tr-TR')}
-                          </p>
-                        )}
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={selectedCustomers.has(customer.id)}
-                        onChange={() => toggleCustomerSelection(customer.id)}
-                        className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
-
-            {/* Templates */}
-            <Card className="p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Şablonlar</h2>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setEditingTemplate(null)
-                    setTemplateName('')
-                    setTemplateMessage('')
-                    setTemplateType('MANUAL')
-                    setShowTemplateModal(true)
+                    setMessageType(null)
+                    setCampaignMessage('')
+                    setSelectedTemplate(null)
+                    setSelectedFilter(null)
+                    setFilteredCustomers([])
+                    setSelectedCustomers(new Set())
                   }}
                 >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Yeni Şablon
+                  <X className="mr-1 h-4 w-4" />
+                  Geri
                 </Button>
               </div>
-              <div className="max-h-96 space-y-2 overflow-y-auto">
-                {templates.length === 0 ? (
-                  <EmptyState
-                    title="Şablon yok"
-                    description="Yeni şablon oluşturmak için butona tıklayın"
-                  />
-                ) : (
-                  templates.map((template) => (
-                    <div
-                      key={template.id}
-                      className={`cursor-pointer rounded-lg border p-3 transition-all ${
-                        selectedTemplate === template.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                      onClick={() => handleTemplateSelect(template)}
+
+              {messageType === 'manual' ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Mesaj</label>
+                    <textarea
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={4}
+                      placeholder="Kampanya mesajınızı yazın..."
+                      value={campaignMessage}
+                      onChange={(e) => setCampaignMessage(e.target.value)}
+                      maxLength={160}
+                    />
+                    <p className="mt-2 text-sm text-gray-500">
+                      {campaignMessage.length}/160 karakter
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">Şablon Seç</label>
+                    <select
+                      value={selectedTemplate || ''}
+                      onChange={(e) => {
+                        const template = templates.find((t) => t.id === e.target.value)
+                        if (template) {
+                          handleTemplateSelect(template)
+                        }
+                      }}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{template.name}</p>
-                          <p className="mt-1 text-sm text-gray-600 line-clamp-2">{template.message}</p>
-                          <Badge variant="default" className="mt-2">
-                            {template.campaign_type}
-                          </Badge>
-                        </div>
-                        <div className="ml-2 flex gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditTemplate(template)
-                            }}
-                            className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteTemplate(template.id)
-                            }}
-                            className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
+                      <option value="">Şablon seçiniz...</option>
+                      {templates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {selectedTemplate && (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <p className="text-sm text-gray-600">{campaignMessage}</p>
                     </div>
-                  ))
+                  )}
+                </div>
+              )}
+
+              {campaignMessage.trim() && (
+                <div className="mt-4">
+                  <Button
+                    onClick={() => {
+                      // Message is ready, show filter selection
+                      setSelectedFilter(null)
+                      setFilteredCustomers([])
+                    }}
+                    className="w-full"
+                    size="lg"
+                  >
+                    Devam Et
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Step 3: Customer Filter Selection */}
+          {messageType && campaignMessage.trim() && (
+            <Card className="p-6">
+              <h2 className="mb-4 text-xl font-semibold text-gray-900">Müşteri Filtreleme</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Filtre Seç</label>
+                  <select
+                    value={selectedFilter || ''}
+                    onChange={(e) => handleFilterChange(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Filtre seçiniz...</option>
+                    <option value="inactive_30">30 gündür gelmeyenler</option>
+                    <option value="this_week">Bu hafta gelenler</option>
+                    <option value="visit_4_of_5">5 ziyaret kampanyasından 4'ünü doldurmuş olanlar</option>
+                    <option value="all">Tüm müşteriler</option>
+                  </select>
+                </div>
+
+                {loadingCustomers && (
+                  <div className="flex justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+                  </div>
+                )}
+
+                {selectedFilter && !loadingCustomers && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600">
+                        {filteredCustomers.length} müşteri bulundu
+                      </p>
+                      {filteredCustomers.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedCustomers.size === filteredCustomers.length) {
+                              setSelectedCustomers(new Set())
+                            } else {
+                              setSelectedCustomers(new Set(filteredCustomers.map((c) => c.id)))
+                            }
+                          }}
+                        >
+                          {selectedCustomers.size === filteredCustomers.length
+                            ? 'Seçimi Kaldır'
+                            : 'Tümünü Seç'}
+                        </Button>
+                      )}
+                    </div>
+
+                    {filteredCustomers.length === 0 ? (
+                      <EmptyState
+                        title="Müşteri bulunamadı"
+                        description="Seçilen filtreye uygun müşteri bulunmuyor"
+                      />
+                    ) : (
+                      <div className="max-h-96 space-y-2 overflow-y-auto">
+                        {filteredCustomers.map((customer) => (
+                          <div
+                            key={customer.id}
+                            className="flex items-center justify-between rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{customer.full_name}</p>
+                              <p className="text-sm text-gray-600">{customer.phone}</p>
+                              {customer.last_visit_at && (
+                                <p className="text-xs text-gray-500">
+                                  Son ziyaret: {new Date(customer.last_visit_at).toLocaleDateString('tr-TR')}
+                                </p>
+                              )}
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={selectedCustomers.has(customer.id)}
+                              onChange={() => toggleCustomerSelection(customer.id)}
+                              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </Card>
-          </div>
+          )}
 
-          {/* Campaign Composer */}
-          {selectedCustomers.size > 0 && (
+          {/* Step 4: Campaign Composer */}
+          {selectedCustomers.size > 0 && campaignMessage.trim() && (
             <Card className="p-6">
               <h2 className="mb-4 text-xl font-semibold text-gray-900">
                 Kampanya Oluştur ({selectedCustomers.size} seçili)

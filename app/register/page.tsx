@@ -10,9 +10,6 @@ import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import { CheckCircle } from 'lucide-react'
 
-// Force dynamic rendering to avoid static generation issues with useSearchParams
-export const dynamic = 'force-dynamic'
-
 function RegisterForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
