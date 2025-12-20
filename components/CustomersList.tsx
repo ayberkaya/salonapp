@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Database } from '@/types/database'
 import Card from '@/components/ui/Card'
@@ -17,6 +18,17 @@ export default function CustomersList({
   profile: Profile
 }) {
   const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Filter customers based on search query
+  const filteredCustomers = customers.filter((customer) => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      customer.full_name?.toLowerCase().includes(query) ||
+      customer.phone?.includes(query)
+    )
+  })
 
   return (
     <div className="space-y-6">
@@ -24,10 +36,22 @@ export default function CustomersList({
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Müşteriler</h1>
           <p className="mt-2 text-gray-600">
-            Toplam {customers.length} müşteri
+            {searchQuery ? `${filteredCustomers.length} müşteri bulundu` : `Toplam ${customers.length} müşteri`}
           </p>
         </div>
       </div>
+
+      {customers.length > 0 && (
+        <div>
+          <input
+            type="text"
+            placeholder="İsim veya telefon ile ara..."
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      )}
 
       {customers.length === 0 ? (
         <Card className="p-12">
@@ -44,9 +68,16 @@ export default function CustomersList({
             }
           />
         </Card>
+      ) : filteredCustomers.length === 0 ? (
+        <Card className="p-12">
+          <EmptyState
+            title="Müşteri bulunamadı"
+            description={`"${searchQuery}" için sonuç bulunamadı`}
+          />
+        </Card>
       ) : (
         <div className="space-y-3">
-          {customers.map((customer) => (
+          {filteredCustomers.map((customer) => (
             <Card
               key={customer.id}
               className="cursor-pointer p-4 transition-all hover:shadow-md"
