@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/lib/toast-context'
 import Modal from '@/components/ui/Modal'
@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { X, Save, Search, User, Calendar, Clock, Scissors, Plus, Trash2 } from 'lucide-react'
 import ServiceSelectDropdown from '@/components/ServiceSelectDropdown'
+import { turkeyProvinces, turkeyCities } from '@/lib/data/turkey-cities'
 
 type Customer = {
   id: string
@@ -79,6 +80,7 @@ export default function AppointmentModal({
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false)
+  const customerDropdownRef = useRef<HTMLDivElement>(null)
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [staffServicesMap, setStaffServicesMap] = useState<Map<string, string[]>>(new Map())
@@ -237,8 +239,29 @@ export default function AppointmentModal({
       searchCustomers()
     } else {
       setCustomers([])
+      setShowCustomerDropdown(false)
     }
   }, [customerSearch])
+
+  // Dropdown dışına tıklandığında kapat
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowCustomerDropdown(false)
+      }
+    }
+
+    if (showCustomerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCustomerDropdown])
 
   const resetForm = () => {
     setSelectedCustomer(null)
@@ -375,11 +398,21 @@ export default function AppointmentModal({
       console.error('Error searching customers:', error)
     } else {
       setCustomers(data || [])
-      setShowCustomerDropdown(data && data.length > 0)
+      // Dropdown'u açık tut - sadece müşteri seçildiğinde veya dışarı tıklandığında kapanacak
+      if (customerSearch.length >= 2) {
+        setShowCustomerDropdown(true)
+      }
     }
   }
 
-  const handleCreateCustomer = async (name: string, phone: string) => {
+  const handleCreateCustomer = async (
+    name: string, 
+    phone: string, 
+    province?: string, 
+    district?: string, 
+    birthDay?: number, 
+    birthMonth?: number
+  ) => {
     const capitalizeWords = (str: string) => {
       return str
         .toLowerCase()
@@ -395,6 +428,10 @@ export default function AppointmentModal({
         salon_id: salonId,
         full_name: capitalizeWords(name),
         phone: phone.length === 10 ? `+90${phone}` : phone,
+        province: province || null,
+        district: district || null,
+        birth_day: birthDay || null,
+        birth_month: birthMonth || null,
         kvkk_consent_at: new Date().toISOString(),
       })
       .select()
@@ -585,7 +622,7 @@ export default function AppointmentModal({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Müşteri <span className="text-red-500">*</span>
           </label>
-          <div className="relative">
+          <div className="relative" ref={customerDropdownRef}>
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <Search className="h-5 w-5 text-gray-400" />
             </div>
@@ -595,7 +632,9 @@ export default function AppointmentModal({
               value={customerSearch}
               onChange={(e) => {
                 setCustomerSearch(e.target.value)
-                setShowCustomerDropdown(true)
+                if (e.target.value.length >= 2) {
+                  setShowCustomerDropdown(true)
+                }
               }}
               onFocus={() => {
                 if (customerSearch.length >= 2) {
@@ -625,9 +664,15 @@ export default function AppointmentModal({
                 <div className="text-center text-gray-500 mb-3">Müşteri bulunamadı</div>
                 <Button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                     setShowCreateCustomerModal(true)
                     setShowCustomerDropdown(false)
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                   }}
                   className="w-full"
                 >
@@ -859,16 +904,36 @@ function CreateCustomerModal({
   initialName = '',
 }: {
   onClose: () => void
-  onCreate: (name: string, phone: string) => void
+  onCreate: (name: string, phone: string, province?: string, district?: string, birthDay?: number, birthMonth?: number) => void
   initialName?: string
 }) {
   const [name, setName] = useState(initialName)
   const [phone, setPhone] = useState('')
+  const [province, setProvince] = useState('')
+  const [district, setDistrict] = useState('')
+  const [birthDay, setBirthDay] = useState<number | ''>('')
+  const [birthMonth, setBirthMonth] = useState<number | ''>('')
+
+  // İl değiştiğinde ilçe listesini sıfırla
+  const handleProvinceChange = (selectedProvince: string) => {
+    setProvince(selectedProvince)
+    setDistrict('') // İl değişince ilçeyi sıfırla
+  }
+
+  // Seçilen ile göre ilçe listesi
+  const districts = province ? (turkeyCities[province] || []) : []
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (name && phone && phone.length === 10) {
-      onCreate(name, phone)
+      onCreate(
+        name, 
+        phone,
+        province || undefined, 
+        district || undefined, 
+        birthDay ? Number(birthDay) : undefined,
+        birthMonth ? Number(birthMonth) : undefined
+      )
     }
   }
 
@@ -917,6 +982,75 @@ function CreateCustomerModal({
               placeholder="5551234567"
               className="pl-12"
             />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            İl
+          </label>
+          <select
+            value={province}
+            onChange={(e) => handleProvinceChange(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">İl Seçiniz</option>
+            {turkeyProvinces.map((prov) => (
+              <option key={prov} value={prov}>
+                {prov}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            İlçe
+          </label>
+          <select
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            disabled={!province}
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-black transition-colors focus:outline-none focus:ring-2 focus:ring-offset-0 focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="">İlçe Seçiniz</option>
+            {districts.map((dist) => (
+              <option key={dist} value={dist}>
+                {dist}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Doğum Günü
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={birthDay}
+              onChange={(e) => setBirthDay(e.target.value ? Number(e.target.value) : '')}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Gün</option>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              ))}
+            </select>
+            <select
+              value={birthMonth}
+              onChange={(e) => setBirthMonth(e.target.value ? Number(e.target.value) : '')}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Ay</option>
+              {[
+                'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+              ].map((month, index) => (
+                <option key={index + 1} value={index + 1}>
+                  {month}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex gap-2 pt-2">

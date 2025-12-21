@@ -20,6 +20,7 @@ export default function Modal({
   title,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const backdropRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -34,7 +35,8 @@ export default function Modal({
       if (target.closest('[data-customer-dropdown]') || target.closest('[data-service-dropdown]')) {
         return
       }
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      // Only close if clicking directly on the backdrop (not on modal content)
+      if (backdropRef.current && backdropRef.current === e.target && modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose()
       }
     }
@@ -60,9 +62,13 @@ export default function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+    <div 
+      ref={backdropRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+    >
       <div
         ref={modalRef}
+        onClick={(e) => e.stopPropagation()}
         className={cn(
           'w-full rounded-lg bg-white shadow-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200',
           sizes[size]

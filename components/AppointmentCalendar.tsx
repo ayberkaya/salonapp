@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, AlertTriangle } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
+import Modal from '@/components/ui/Modal'
+import Button from '@/components/ui/Button'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays, startOfDay, setHours, setMinutes, isPast, isToday } from 'date-fns'
 import { tr } from 'date-fns/locale/tr'
 
@@ -58,6 +60,8 @@ export default function AppointmentCalendar({
   const [viewType, setViewType] = useState<'month' | 'day'>('month')
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState(new Date())
+  const [showOutsideHoursModal, setShowOutsideHoursModal] = useState(false)
+  const [pendingClick, setPendingClick] = useState<{ date: Date; staffId?: string; staffName?: string } | null>(null)
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
@@ -482,7 +486,13 @@ export default function AppointmentCalendar({
                                   if (isPastTime) {
                                     return
                                   }
-                                  onDateClick(clickDate, staff.id)
+                                  // Show confirmation modal before proceeding
+                                  setPendingClick({
+                                    date: clickDate,
+                                    staffId: staff.id,
+                                    staffName: staff.full_name
+                                  })
+                                  setShowOutsideHoursModal(true)
                                 }}
                                 title="Personel çalışma saatleri dışında"
                               />
@@ -649,6 +659,68 @@ export default function AppointmentCalendar({
           <span className="text-gray-600">İptal</span>
         </div>
       </div>
+
+      {/* Outside Working Hours Confirmation Modal */}
+      <Modal
+        isOpen={showOutsideHoursModal}
+        onClose={() => {
+          setShowOutsideHoursModal(false)
+          setPendingClick(null)
+        }}
+        title="Personel Çalışma Saatleri Dışında"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-gray-700">
+                {pendingClick?.staffName ? (
+                  <>
+                    <strong>{pendingClick.staffName}</strong> personelinin çalışma saatleri dışında randevu eklemek istiyorsunuz.
+                  </>
+                ) : (
+                  <>Personel çalışma saatleri dışında randevu eklemek istiyorsunuz.</>
+                )}
+              </p>
+              {pendingClick && (
+                <p className="mt-2 text-sm text-gray-600">
+                  <strong>Tarih:</strong> {format(pendingClick.date, 'd MMMM yyyy, HH:mm', { locale: tr })}
+                </p>
+              )}
+              <p className="mt-3 text-sm font-medium text-gray-900">
+                Devam etmek istediğinizden emin misiniz?
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowOutsideHoursModal(false)
+                setPendingClick(null)
+              }}
+            >
+              İptal
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => {
+                if (pendingClick) {
+                  onDateClick(pendingClick.date, pendingClick.staffId)
+                }
+                setShowOutsideHoursModal(false)
+                setPendingClick(null)
+              }}
+            >
+              Evet, Devam Et
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Card>
   )
 }
