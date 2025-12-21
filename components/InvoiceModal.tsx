@@ -1049,11 +1049,12 @@ export default function InvoiceModal({
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Hizmetler</label>
                   <ServiceSelectDropdown
-                    services={row.staff_id && staffServicesMap.has(row.staff_id)
-                      ? services.filter(s => staffServicesMap.get(row.staff_id)!.includes(s.id))
-                      : row.staff_id
-                      ? [] // Staff selected but no services available
-                      : services} // No staff selected, show all services
+                    services={(() => {
+                      if (!row.staff_id) return services
+                      const staffServiceIds = staffServicesMap.get(row.staff_id)
+                      if (!staffServiceIds || staffServiceIds.length === 0) return []
+                      return services.filter(s => staffServiceIds.includes(s.id))
+                    })()}
                     selectedServiceIds={row.service_ids}
                     onSelectionChange={(serviceIds) => {
                       // Update the row with new service selections
