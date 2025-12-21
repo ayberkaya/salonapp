@@ -8,7 +8,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
-import { Receipt, Search, Filter, Calendar, TrendingUp, Users, DollarSign, Plus } from 'lucide-react'
+import { Receipt, Search, Filter, Calendar, TrendingUp, Users, DollarSign, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import InvoiceModal from '@/components/InvoiceModal'
 
@@ -64,6 +64,10 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
 
   // Invoice Modal
   const [showInvoiceModal, setShowInvoiceModal] = useState(false)
+
+  // Accordion states
+  const [isStaffRevenueOpen, setIsStaffRevenueOpen] = useState(false)
+  const [isInvoiceListOpen, setIsInvoiceListOpen] = useState(false)
 
   useEffect(() => {
     loadInvoices()
@@ -266,53 +270,53 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card style={{ padding: '17.28px' }}>
+        <Card style={{ padding: '13.82px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Toplam Ciro</p>
-              <p className="mt-1.5 text-xl font-bold text-gray-900">
+              <p className="mt-1 text-xl font-bold text-gray-900">
                 {totalRevenue.toFixed(2)} ₺
               </p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">
-              <DollarSign className="text-green-600" style={{ width: '18px', height: '18px' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+              <DollarSign className="text-green-600" style={{ width: '16px', height: '16px' }} />
             </div>
           </div>
         </Card>
-        <Card style={{ padding: '17.28px' }}>
+        <Card style={{ padding: '13.82px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Bugünkü Ciro</p>
-              <p className="mt-1.5 text-xl font-bold text-gray-900">
+              <p className="mt-1 text-xl font-bold text-gray-900">
                 {todayRevenue.toFixed(2)} ₺
               </p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
-              <TrendingUp className="text-blue-600" style={{ width: '18px', height: '18px' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+              <TrendingUp className="text-blue-600" style={{ width: '16px', height: '16px' }} />
             </div>
           </div>
         </Card>
-        <Card style={{ padding: '17.28px' }}>
+        <Card style={{ padding: '13.82px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Toplam Adisyon</p>
-              <p className="mt-1.5 text-xl font-bold text-gray-900">{invoiceCount}</p>
+              <p className="mt-1 text-xl font-bold text-gray-900">{invoiceCount}</p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100">
-              <Receipt className="text-purple-600" style={{ width: '18px', height: '18px' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
+              <Receipt className="text-purple-600" style={{ width: '16px', height: '16px' }} />
             </div>
           </div>
         </Card>
-        <Card style={{ padding: '17.28px' }}>
+        <Card style={{ padding: '13.82px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-600">Ortalama Adisyon</p>
-              <p className="mt-1.5 text-xl font-bold text-gray-900">
+              <p className="mt-1 text-xl font-bold text-gray-900">
                 {invoiceCount > 0 ? (totalRevenue / invoiceCount).toFixed(2) : '0.00'} ₺
               </p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100">
-              <Calendar className="text-orange-600" style={{ width: '18px', height: '18px' }} />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
+              <Calendar className="text-orange-600" style={{ width: '16px', height: '16px' }} />
             </div>
           </div>
         </Card>
@@ -367,95 +371,122 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
 
       {/* Staff Revenue */}
       {staffRevenue.length > 0 && (
-        <Card className="p-6">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">Personel Bazlı Ciro</h2>
-          <div className="space-y-3">
-            {staffRevenue.map((staff) => (
-              <div
-                key={staff.staff_id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                    <Users className="h-5 w-5 text-blue-600" />
+        <Card className="p-3">
+          <button
+            onClick={() => setIsStaffRevenueOpen(!isStaffRevenueOpen)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-lg font-semibold text-gray-900">Personel Bazlı Ciro</h2>
+            {isStaffRevenueOpen ? (
+              <ChevronUp className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            )}
+          </button>
+          {isStaffRevenueOpen && (
+            <div className="mt-3 space-y-3">
+              {staffRevenue.map((staff) => (
+                <div
+                  key={staff.staff_id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white"
+                  style={{ padding: '12.8px' }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                      <Users className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{staff.staff_name}</p>
+                      <p className="text-xs text-gray-600">{staff.invoice_count} adisyon</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{staff.staff_name}</p>
-                    <p className="text-sm text-gray-600">{staff.invoice_count} adisyon</p>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-900">
+                      {staff.total_revenue.toFixed(2)} ₺
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Ort: {(staff.total_revenue / staff.invoice_count).toFixed(2)} ₺
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-gray-900">
-                    {staff.total_revenue.toFixed(2)} ₺
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Ort: {(staff.total_revenue / staff.invoice_count).toFixed(2)} ₺
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 
       {/* Invoices List */}
-      <Card className="p-6">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Adisyon Listesi</h2>
-        {loading ? (
-          <div className="py-8 text-center text-gray-500">Yükleniyor...</div>
-        ) : invoices.length === 0 ? (
-          <EmptyState
-            title="Adisyon bulunamadı"
-            description="Henüz adisyon oluşturulmamış"
-          />
-        ) : (
-          <div className="space-y-3">
-            {invoices.map((invoice) => (
-              <div
-                key={invoice.id}
-                className="rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md"
-                style={{ padding: '12.8px' }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Badge variant="default">{invoice.invoice_number}</Badge>
-                      <span className="text-xs text-gray-500">
-                        {formatDate(invoice.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {invoice.customers?.full_name || 'Bilinmeyen Müşteri'}
-                    </p>
-                    <p className="text-xs text-gray-600">{invoice.customers?.phone}</p>
-                    {invoice.invoice_staff && invoice.invoice_staff.length > 0 && (
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {invoice.invoice_staff.map((is, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {is.staff?.full_name}
-                          </Badge>
-                        ))}
+      <Card className="p-3">
+        <button
+          onClick={() => setIsInvoiceListOpen(!isInvoiceListOpen)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <h2 className="text-lg font-semibold text-gray-900">Adisyon Listesi</h2>
+          {isInvoiceListOpen ? (
+            <ChevronUp className="h-4 w-4 text-gray-500" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-gray-500" />
+          )}
+        </button>
+        {isInvoiceListOpen && (
+          <div className="mt-3">
+            {loading ? (
+              <div className="py-8 text-center text-gray-500">Yükleniyor...</div>
+            ) : invoices.length === 0 ? (
+              <EmptyState
+                title="Adisyon bulunamadı"
+                description="Henüz adisyon oluşturulmamış"
+              />
+            ) : (
+              <div className="space-y-3">
+                {invoices.map((invoice) => (
+                  <div
+                    key={invoice.id}
+                    className="rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md"
+                    style={{ padding: '12.8px' }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <Badge variant="default">{invoice.invoice_number}</Badge>
+                          <span className="text-xs text-gray-500">
+                            {formatDate(invoice.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {invoice.customers?.full_name || 'Bilinmeyen Müşteri'}
+                        </p>
+                        <p className="text-xs text-gray-600">{invoice.customers?.phone}</p>
+                        {invoice.invoice_staff && invoice.invoice_staff.length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {invoice.invoice_staff.map((is, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {is.staff?.full_name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div className="text-right">
+                        {invoice.discount_percentage > 0 && (
+                          <p className="text-xs text-gray-500 line-through">
+                            {invoice.subtotal.toFixed(2)} ₺
+                          </p>
+                        )}
+                        <p className="text-xl font-bold text-green-600">
+                          {invoice.total_amount.toFixed(2)} ₺
+                        </p>
+                        {invoice.discount_percentage > 0 && (
+                          <p className="text-xs text-red-600">
+                            %{invoice.discount_percentage} indirim
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    {invoice.discount_percentage > 0 && (
-                      <p className="text-xs text-gray-500 line-through">
-                        {invoice.subtotal.toFixed(2)} ₺
-                      </p>
-                    )}
-                    <p className="text-xl font-bold text-green-600">
-                      {invoice.total_amount.toFixed(2)} ₺
-                    </p>
-                    {invoice.discount_percentage > 0 && (
-                      <p className="text-xs text-red-600">
-                        %{invoice.discount_percentage} indirim
-                      </p>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </Card>
