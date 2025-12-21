@@ -81,6 +81,7 @@ export default function AppointmentModal({
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false)
   const [staffList, setStaffList] = useState<Staff[]>([])
   const [services, setServices] = useState<Service[]>([])
+  const [staffServicesMap, setStaffServicesMap] = useState<Map<string, string[]>>(new Map())
   const [serviceRows, setServiceRows] = useState<ServiceRow[]>([])
   const [formData, setFormData] = useState({
     appointment_date: '',
@@ -298,10 +299,23 @@ export default function AppointmentModal({
     const staff = staffList.find(s => s.id === staffId)
     setServiceRows(rows => rows.map(row => {
       if (row.id === rowId) {
+        // Filter out services that are not available for this staff
+        const availableServiceIds = staffId && staffServicesMap.has(staffId)
+          ? staffServicesMap.get(staffId)!
+          : []
+        const filteredServices = staffId && availableServiceIds.length > 0
+          ? row.services.filter(s => availableServiceIds.includes(s.id))
+          : row.services
+        const filteredServiceIds = staffId && availableServiceIds.length > 0
+          ? row.service_ids.filter(id => availableServiceIds.includes(id))
+          : row.service_ids
+        
         return {
           ...row,
           staff_id: staffId,
           staff_name: staff?.full_name || null,
+          services: filteredServices,
+          service_ids: filteredServiceIds
         }
       }
       return row
@@ -318,6 +332,21 @@ export default function AppointmentModal({
 
     if (data) {
       setStaffList(data)
+      // Load staff services for all staff
+      const staffServices = new Map<string, string[]>()
+      for (const staff of data) {
+        const { data: staffServicesData } = await supabase
+          .from('staff_services')
+          .select('service_id')
+          .eq('staff_id', staff.id)
+        
+        if (staffServicesData) {
+          staffServices.set(staff.id, staffServicesData.map((item: any) => item.service_id))
+        } else {
+          staffServices.set(staff.id, [])
+        }
+      }
+      setStaffServicesMap(staffServices)
     }
   }
 
@@ -670,7 +699,11 @@ export default function AppointmentModal({
                 <div className="relative">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Hizmetler</label>
                   <ServiceSelectDropdown
-                    services={services}
+                    services={row.staff_id && staffServicesMap.has(row.staff_id)
+                      ? services.filter(s => staffServicesMap.get(row.staff_id)!.includes(s.id))
+                      : row.staff_id
+                      ? [] // Staff selected but no services available
+                      : services} // No staff selected, show all services
                     selectedServiceIds={row.service_ids}
                     onSelectionChange={(serviceIds) => {
                       // Update the row with new service selections

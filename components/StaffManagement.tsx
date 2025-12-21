@@ -20,6 +20,19 @@ type Staff = {
   created_at: string
 }
 
+type Service = {
+  id: string
+  name: string
+  default_price: number
+  category_id: string | null
+}
+
+type ServiceCategory = {
+  id: string
+  name: string
+  display_order: number
+}
+
 type StaffPerformance = {
   staff_id: string
   total_revenue: number
@@ -54,9 +67,15 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
   const [expandedStaff, setExpandedStaff] = useState<Set<string>>(new Set())
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [showPerformanceModal, setShowPerformanceModal] = useState(false)
+  const [services, setServices] = useState<Service[]>([])
+  const [categories, setCategories] = useState<ServiceCategory[]>([])
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadStaff()
+    loadServices()
+    loadCategories()
   }, [])
 
   useEffect(() => {
@@ -80,6 +99,117 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
       setStaff(data || [])
     }
     setLoading(false)
+  }
+
+  const loadServices = async () => {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('salon_id', salonId)
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Error loading services:', error)
+    } else {
+      setServices(data || [])
+    }
+  }
+
+  const loadCategories = async () => {
+    const { data, error } = await supabase
+      .from('service_categories')
+      .select('*')
+      .eq('salon_id', salonId)
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Error loading categories:', error)
+    } else {
+      setCategories(data || [])
+    }
+  }
+
+  const loadStaffServices = async (staffId: string) => {
+    const { data, error } = await supabase
+      .from('staff_services')
+      .select('service_id')
+      .eq('staff_id', staffId)
+
+    if (error) {
+      console.error('Error loading staff services:', error)
+      return []
+    } else {
+      return (data || []).map((item: any) => item.service_id)
+    }
+  }
+
+  const updateStaffServices = async (staffId: string, serviceIds: string[]) => {
+    // Delete existing staff services
+    const { error: deleteError } = await supabase
+      .from('staff_services')
+      .delete()
+      .eq('staff_id', staffId)
+
+    if (deleteError) {
+      console.error('Error deleting staff services:', deleteError)
+      return
+    }
+
+    // Insert new staff services
+    if (serviceIds.length > 0) {
+      const staffServices = serviceIds.map(serviceId => ({
+        staff_id: staffId,
+        service_id: serviceId,
+      }))
+
+      const { error: insertError } = await supabase
+        .from('staff_services')
+        .insert(staffServices)
+
+      if (insertError) {
+        console.error('Error inserting staff services:', insertError)
+      }
+    }
+  }
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId)
+      } else {
+        newSet.add(categoryId)
+      }
+      return newSet
+    })
+  }
+
+  const servicesByCategory = () => {
+    const grouped: { [key: string]: Service[] } = {}
+    const uncategorized: Service[] = []
+
+    services.forEach((service) => {
+      if (service.category_id) {
+        if (!grouped[service.category_id]) {
+          grouped[service.category_id] = []
+        }
+        grouped[service.category_id].push(service)
+      } else {
+        uncategorized.push(service)
+      }
+    })
+
+    return { grouped, uncategorized }
+  }
+
+  const handleServiceToggle = (serviceId: string) => {
+    if (selectedServiceIds.includes(serviceId)) {
+      setSelectedServiceIds(selectedServiceIds.filter(id => id !== serviceId))
+    } else {
+      setSelectedServiceIds([...selectedServiceIds, serviceId])
+    }
   }
 
   const loadPerformanceData = async () => {
@@ -204,10 +334,11 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
 
   const handleAdd = () => {
     setFormData({ full_name: '', phone: '', work_start_time: '', work_end_time: '' })
+    setSelectedServiceIds([])
     setShowAddModal(true)
   }
 
-  const handleEdit = (staffMember: Staff) => {
+  const handleEdit = async (staffMember: Staff) => {
     setEditingStaff(staffMember)
     setFormData({
       full_name: staffMember.full_name,
@@ -215,6 +346,8 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
       work_start_time: staffMember.work_start_time || '',
       work_end_time: staffMember.work_end_time || '',
     })
+    const serviceIds = await loadStaffServices(staffMember.id)
+    setSelectedServiceIds(serviceIds)
     setShowEditModal(true)
   }
 
@@ -252,14 +385,17 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
           showToast('Personel güncellenirken hata oluştu', 'error')
           console.error('Update error:', error)
         } else {
+          // Update staff services
+          await updateStaffServices(editingStaff.id, selectedServiceIds)
           showToast('Personel başarıyla güncellendi', 'success')
           setShowEditModal(false)
           setEditingStaff(null)
+          setSelectedServiceIds([])
           loadStaff()
         }
       } else {
         // Create new staff
-        const { error } = await supabase
+        const { data: newStaff, error } = await supabase
           .from('staff')
           .insert({
             salon_id: salonId,
@@ -269,14 +405,21 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
             work_end_time: formData.work_end_time.trim() || null,
             created_by: profileId,
           })
+          .select()
+          .single()
 
         if (error) {
           showToast('Personel eklenirken hata oluştu', 'error')
           console.error('Insert error:', error)
         } else {
+          // Add staff services
+          if (newStaff && selectedServiceIds.length > 0) {
+            await updateStaffServices(newStaff.id, selectedServiceIds)
+          }
           showToast('Personel başarıyla eklendi', 'success')
           setShowAddModal(false)
           setFormData({ full_name: '', phone: '', work_start_time: '', work_end_time: '' })
+          setSelectedServiceIds([])
           loadStaff()
         }
       }
@@ -584,10 +727,110 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
                 />
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Verebileceği Hizmetler
+              </label>
+              <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                {categories.map((category) => {
+                  const categoryServices = servicesByCategory().grouped[category.id] || []
+                  if (categoryServices.length === 0) return null
+                  const isExpanded = expandedCategories.has(category.id)
+                  
+                  return (
+                    <div key={category.id} className="space-y-1">
+                      <div
+                        onClick={() => toggleCategory(category.id)}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-gray-600" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-600" />
+                        )}
+                        <span className="text-sm font-semibold text-gray-900">{category.name}</span>
+                      </div>
+                      {isExpanded && (
+                        <div className="pl-6 space-y-1">
+                          {categoryServices.map((service) => {
+                            const isSelected = selectedServiceIds.includes(service.id)
+                            return (
+                              <label
+                                key={service.id}
+                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleServiceToggle(service.id)}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-900">{service.name}</span>
+                                <span className="text-xs text-gray-500 ml-auto">{service.default_price.toFixed(2)} ₺</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {servicesByCategory().uncategorized.length > 0 && (
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleCategory('uncategorized')}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                    >
+                      {expandedCategories.has('uncategorized') ? (
+                        <ChevronUp className="h-4 w-4 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className="text-sm font-semibold text-gray-900">Kategorisiz</span>
+                    </div>
+                    {expandedCategories.has('uncategorized') && (
+                      <div className="pl-6 space-y-1">
+                        {servicesByCategory().uncategorized.map((service) => {
+                          const isSelected = selectedServiceIds.includes(service.id)
+                          return (
+                            <label
+                              key={service.id}
+                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleServiceToggle(service.id)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-900">{service.name}</span>
+                              <span className="text-xs text-gray-500 ml-auto">{service.default_price.toFixed(2)} ₺</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {services.length === 0 && (
+                  <div className="text-center text-sm text-gray-500 py-4">
+                    Henüz hizmet eklenmemiş
+                  </div>
+                )}
+              </div>
+              {selectedServiceIds.length > 0 && (
+                <p className="mt-2 text-xs text-gray-600">
+                  {selectedServiceIds.length} hizmet seçildi
+                </p>
+              )}
+            </div>
             <div className="flex gap-2 pt-2">
               <Button
                 variant="ghost"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false)
+                  setSelectedServiceIds([])
+                }}
                 className="flex-1"
                 disabled={saving}
               >
@@ -610,6 +853,7 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
           onClose={() => {
             setShowEditModal(false)
             setEditingStaff(null)
+            setSelectedServiceIds([])
           }}
           title="Personel Düzenle"
         >
@@ -676,12 +920,110 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
                 />
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Verebileceği Hizmetler
+              </label>
+              <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                {categories.map((category) => {
+                  const categoryServices = servicesByCategory().grouped[category.id] || []
+                  if (categoryServices.length === 0) return null
+                  const isExpanded = expandedCategories.has(category.id)
+                  
+                  return (
+                    <div key={category.id} className="space-y-1">
+                      <div
+                        onClick={() => toggleCategory(category.id)}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-gray-600" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-600" />
+                        )}
+                        <span className="text-sm font-semibold text-gray-900">{category.name}</span>
+                      </div>
+                      {isExpanded && (
+                        <div className="pl-6 space-y-1">
+                          {categoryServices.map((service) => {
+                            const isSelected = selectedServiceIds.includes(service.id)
+                            return (
+                              <label
+                                key={service.id}
+                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleServiceToggle(service.id)}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-900">{service.name}</span>
+                                <span className="text-xs text-gray-500 ml-auto">{service.default_price.toFixed(2)} ₺</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {servicesByCategory().uncategorized.length > 0 && (
+                  <div className="space-y-1">
+                    <div
+                      onClick={() => toggleCategory('uncategorized')}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                    >
+                      {expandedCategories.has('uncategorized') ? (
+                        <ChevronUp className="h-4 w-4 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-600" />
+                      )}
+                      <span className="text-sm font-semibold text-gray-900">Kategorisiz</span>
+                    </div>
+                    {expandedCategories.has('uncategorized') && (
+                      <div className="pl-6 space-y-1">
+                        {servicesByCategory().uncategorized.map((service) => {
+                          const isSelected = selectedServiceIds.includes(service.id)
+                          return (
+                            <label
+                              key={service.id}
+                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleServiceToggle(service.id)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-900">{service.name}</span>
+                              <span className="text-xs text-gray-500 ml-auto">{service.default_price.toFixed(2)} ₺</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {services.length === 0 && (
+                  <div className="text-center text-sm text-gray-500 py-4">
+                    Henüz hizmet eklenmemiş
+                  </div>
+                )}
+              </div>
+              {selectedServiceIds.length > 0 && (
+                <p className="mt-2 text-xs text-gray-600">
+                  {selectedServiceIds.length} hizmet seçildi
+                </p>
+              )}
+            </div>
             <div className="flex gap-2 pt-2">
               <Button
                 variant="ghost"
                 onClick={() => {
                   setShowEditModal(false)
                   setEditingStaff(null)
+                  setSelectedServiceIds([])
                 }}
                 className="flex-1"
                 disabled={saving}

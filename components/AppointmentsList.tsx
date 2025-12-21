@@ -297,7 +297,8 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
             className="w-full sm:w-auto min-h-[44px]"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Yeni Randevu
+            <span className="hidden sm:inline">Yeni Randevu</span>
+            <span className="sm:hidden">Yeni</span>
           </Button>
         </div>
       </div>
