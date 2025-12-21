@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
-import { LogOut, Settings, User, ChevronDown, Scissors, Users } from 'lucide-react'
+import { LogOut, Settings, User, ChevronDown, Scissors, Users, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -79,6 +79,15 @@ export default function UserMenu({ profile }: { profile: Profile }) {
                 <span>Personel Yönetimi</span>
               </Link>
             )}
+            
+            <Link
+              href="/reports"
+              onClick={() => setIsOpen(false)}
+              className="cursor-pointer flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              <BarChart3 className="h-4 w-4 text-gray-400" />
+              <span>Ciro Raporu</span>
+            </Link>
             
             <Link
               href="/settings"

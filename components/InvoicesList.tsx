@@ -8,7 +8,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
-import { Receipt, Search, Filter, Calendar, TrendingUp, Users, DollarSign, Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Receipt, Search, Filter, Calendar, TrendingUp, Users, DollarSign, Plus, ChevronDown, ChevronUp, Scissors } from 'lucide-react'
 import EmptyState from '@/components/ui/EmptyState'
 import InvoiceModal from '@/components/InvoiceModal'
 
@@ -21,6 +21,7 @@ type Invoice = {
   discount_percentage: number
   discount_amount: number
   total_amount: number
+  notes: string | null
   created_at: string
   customers: {
     full_name: string
@@ -31,6 +32,12 @@ type Invoice = {
     staff: {
       full_name: string
     }
+  }>
+  invoice_items?: Array<{
+    service_name: string
+    quantity: number
+    unit_price: number
+    total_price: number
   }>
 }
 
@@ -68,6 +75,13 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
   // Accordion states
   const [isStaffRevenueOpen, setIsStaffRevenueOpen] = useState(false)
   const [isInvoiceListOpen, setIsInvoiceListOpen] = useState(false)
+  const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set())
+  const [invoiceItemsMap, setInvoiceItemsMap] = useState<Map<string, Array<{
+    service_name: string
+    quantity: number
+    unit_price: number
+    total_price: number
+  }>>>(new Map())
 
   useEffect(() => {
     loadInvoices()
@@ -104,6 +118,12 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
         invoice_staff (
           staff_id,
           staff (full_name)
+        ),
+        invoice_items (
+          service_name,
+          quantity,
+          unit_price,
+          total_price
         )
       `)
       .eq('salon_id', profile.salon_id)
@@ -439,52 +459,84 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
               />
             ) : (
               <div className="space-y-3">
-                {invoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md"
-                    style={{ padding: '12.8px' }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <Badge variant="default">{invoice.invoice_number}</Badge>
-                          <span className="text-xs text-gray-500">
-                            {formatDate(invoice.created_at)}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {invoice.customers?.full_name || 'Bilinmeyen Müşteri'}
-                        </p>
-                        <p className="text-xs text-gray-600">{invoice.customers?.phone}</p>
-                        {invoice.invoice_staff && invoice.invoice_staff.length > 0 && (
-                          <div className="mt-1.5 flex flex-wrap gap-1">
-                            {invoice.invoice_staff.map((is, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {is.staff?.full_name}
-                              </Badge>
-                            ))}
+                {invoices.map((invoice) => {
+                  const isExpanded = expandedInvoices.has(invoice.id)
+                  return (
+                    <div
+                      key={invoice.id}
+                      className="rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md"
+                      style={{ padding: '12.8px' }}
+                    >
+                      <div 
+                        className="flex items-start justify-between cursor-pointer"
+                        onClick={() => {
+                          setExpandedInvoices(prev => {
+                            const newSet = new Set(prev)
+                            if (newSet.has(invoice.id)) {
+                              newSet.delete(invoice.id)
+                            } else {
+                              newSet.add(invoice.id)
+                            }
+                            return newSet
+                          })
+                        }}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Badge variant="default">{invoice.invoice_number}</Badge>
+                            <span className="text-xs text-gray-500">
+                              {formatDate(invoice.created_at)}
+                            </span>
                           </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        {invoice.discount_percentage > 0 && (
-                          <p className="text-xs text-gray-500 line-through">
-                            {invoice.subtotal.toFixed(2)} ₺
+                          <p className="text-sm font-medium text-gray-900">
+                            {invoice.customers?.full_name || 'Bilinmeyen Müşteri'}
                           </p>
-                        )}
-                        <p className="text-xl font-bold text-green-600">
-                          {invoice.total_amount.toFixed(2)} ₺
-                        </p>
-                        {invoice.discount_percentage > 0 && (
-                          <p className="text-xs text-red-600">
-                            %{invoice.discount_percentage} indirim
-                          </p>
-                        )}
+                          <p className="text-xs text-gray-600">{invoice.customers?.phone}</p>
+                          {invoice.invoice_staff && invoice.invoice_staff.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {invoice.invoice_staff.map((is, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {is.staff?.full_name}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right flex items-start gap-2">
+                          <div>
+                            {invoice.discount_percentage > 0 && (
+                              <p className="text-xs text-gray-500 line-through">
+                                {invoice.subtotal.toFixed(2)} ₺
+                              </p>
+                            )}
+                            <p className="text-xl font-bold text-green-600">
+                              {invoice.total_amount.toFixed(2)} ₺
+                            </p>
+                            {invoice.discount_percentage > 0 && (
+                              <p className="text-xs text-red-600">
+                                %{invoice.discount_percentage} indirim
+                              </p>
+                            )}
+                          </div>
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-gray-500 mt-1" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-gray-500 mt-1" />
+                          )}
+                        </div>
                       </div>
+                      
+                      {isExpanded && (
+                        <InvoiceDetailsContent 
+                          invoice={invoice}
+                          invoiceItemsMap={invoiceItemsMap}
+                          setInvoiceItemsMap={setInvoiceItemsMap}
+                          supabase={supabase}
+                        />
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -503,6 +555,139 @@ export default function InvoicesList({ profile }: InvoicesListProps) {
         salonId={profile.salon_id}
         profileId={profile.id}
       />
+    </div>
+  )
+}
+
+function InvoiceDetailsContent({
+  invoice,
+  invoiceItemsMap,
+  setInvoiceItemsMap,
+  supabase,
+}: {
+  invoice: Invoice
+  invoiceItemsMap: Map<string, Array<{
+    service_name: string
+    quantity: number
+    unit_price: number
+    total_price: number
+  }>>
+  setInvoiceItemsMap: React.Dispatch<React.SetStateAction<Map<string, Array<{
+    service_name: string
+    quantity: number
+    unit_price: number
+    total_price: number
+  }>>>>
+  supabase: ReturnType<typeof createClient>
+}) {
+  const [loadingItems, setLoadingItems] = useState(false)
+
+  useEffect(() => {
+    // Load invoice items if not already loaded
+    if (!invoiceItemsMap.has(invoice.id)) {
+      const loadItems = async () => {
+        setLoadingItems(true)
+        const { data, error } = await supabase
+          .from('invoice_items')
+          .select('service_name, quantity, unit_price, total_price')
+          .eq('invoice_id', invoice.id)
+          .order('created_at', { ascending: true })
+
+        if (!error && data) {
+          setInvoiceItemsMap(prev => {
+            const newMap = new Map(prev)
+            newMap.set(invoice.id, data.map(item => ({
+              service_name: item.service_name,
+              quantity: item.quantity,
+              unit_price: parseFloat(item.unit_price.toString()),
+              total_price: parseFloat(item.total_price.toString()),
+            })))
+            return newMap
+          })
+        }
+        setLoadingItems(false)
+      }
+      loadItems()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoice.id])
+
+  const items = invoiceItemsMap.get(invoice.id) || invoice.invoice_items || []
+
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+      {/* Invoice Items */}
+      {loadingItems ? (
+        <div className="text-sm text-gray-500">Hizmet detayları yükleniyor...</div>
+      ) : items.length > 0 ? (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <Scissors className="h-4 w-4" />
+            Yapılan İşlemler
+          </h3>
+          <div className="space-y-2">
+            {items.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between rounded-lg bg-gray-50 p-2"
+              >
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    {item.service_name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {item.quantity} adet × {item.unit_price.toFixed(2)} ₺
+                  </p>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {item.total_price.toFixed(2)} ₺
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500">Hizmet detayı bulunamadı</div>
+      )}
+
+      {/* Discount Details */}
+      {(invoice.discount_percentage > 0 || invoice.discount_amount > 0) && (
+        <div className="rounded-lg bg-red-50 p-3">
+          <h3 className="text-sm font-semibold text-red-900 mb-2">
+            İndirim Detayları
+          </h3>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-700">Ara Toplam:</span>
+              <span className="font-normal text-black">{invoice.subtotal.toFixed(2)} ₺</span>
+            </div>
+            {invoice.discount_percentage > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-700">
+                  İndirim (%{invoice.discount_percentage}):
+                </span>
+                <span className="font-medium text-red-600">
+                  -{invoice.discount_amount.toFixed(2)} ₺
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between pt-1 border-t border-red-200">
+              <span className="font-semibold text-gray-900">Toplam:</span>
+              <span className="font-bold text-green-600">
+                {invoice.total_amount.toFixed(2)} ₺
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes */}
+      {invoice.notes && (
+        <div className="rounded-lg bg-blue-50 p-3">
+          <h3 className="text-sm font-semibold text-blue-900 mb-1">Notlar</h3>
+          <p className="text-sm text-gray-700">{invoice.notes}</p>
+        </div>
+      )}
     </div>
   )
 }
