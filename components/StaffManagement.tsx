@@ -17,6 +17,7 @@ type Staff = {
   is_active: boolean
   work_start_time: string | null
   work_end_time: string | null
+  color: string | null
   created_at: string
 }
 
@@ -96,7 +97,86 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
       console.error('Error loading staff:', error)
       showToast('Personel listesi yüklenirken hata oluştu', 'error')
     } else {
-      setStaff(data || [])
+      // Assign colors to staff members that don't have one
+      const staffWithoutColor = (data || []).filter(s => !s.color)
+      if (staffWithoutColor.length > 0) {
+        // Get all existing colors
+        const existingColors = new Set(
+          (data || [])
+            .filter(s => s.color)
+            .map(s => s.color)
+        )
+
+        // Color palette
+        const colorPalette = [
+          '#FFB3BA', // Pastel Pink
+          '#BAFFC9', // Pastel Green
+          '#BAE1FF', // Pastel Blue
+          '#FFFFBA', // Pastel Yellow
+          '#FFDFBA', // Pastel Orange
+          '#E0BBE4', // Pastel Purple
+          '#B4E4D9', // Pastel Turquoise
+          '#FFCCCB', // Light Pink
+          '#C7CEEA', // Lavender
+          '#F0E68C', // Khaki
+          '#DDA0DD', // Plum
+          '#98D8C8', // Mint
+          '#F7DC6F', // Light Yellow
+          '#AED6F1', // Sky Blue
+          '#F8B88B', // Peach
+          '#D2B4DE', // Light Purple
+          '#A9DFBF', // Light Green
+          '#FAD7A0', // Light Orange
+          '#D5DBDB', // Light Gray
+          '#F9E79F', // Light Gold
+        ]
+
+        // Assign colors to staff without colors
+        for (const staffMember of staffWithoutColor) {
+          // Find first unused color from palette
+          let assignedColor: string | null = null
+          for (const color of colorPalette) {
+            if (!existingColors.has(color)) {
+              assignedColor = color
+              existingColors.add(color)
+              break
+            }
+          }
+
+          // If all palette colors are used, generate random color
+          if (!assignedColor) {
+            const randomColor = () => {
+              const hue = Math.floor(Math.random() * 360)
+              const saturation = 60 + Math.floor(Math.random() * 20) // 60-80%
+              const lightness = 80 + Math.floor(Math.random() * 15) // 80-95%
+              return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+            }
+            assignedColor = randomColor()
+            // Ensure it's unique
+            while (existingColors.has(assignedColor)) {
+              assignedColor = randomColor()
+            }
+            existingColors.add(assignedColor)
+          }
+
+          // Update staff member with color
+          await supabase
+            .from('staff')
+            .update({ color: assignedColor })
+            .eq('id', staffMember.id)
+        }
+
+        // Reload staff to get updated colors
+        const { data: updatedData } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('salon_id', salonId)
+          .order('created_at', { ascending: false })
+
+        setStaff(updatedData || [])
+      } else {
+        setStaff(data || [])
+      }
     }
     setLoading(false)
   }
@@ -351,6 +431,64 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
     setShowEditModal(true)
   }
 
+  // Generate a unique color for staff member
+  const getUniqueColor = async (): Promise<string> => {
+    // Predefined color palette - pastel colors that work well for backgrounds
+    const colorPalette = [
+      '#FFB3BA', // Pastel Pink
+      '#BAFFC9', // Pastel Green
+      '#BAE1FF', // Pastel Blue
+      '#FFFFBA', // Pastel Yellow
+      '#FFDFBA', // Pastel Orange
+      '#E0BBE4', // Pastel Purple
+      '#B4E4D9', // Pastel Turquoise
+      '#FFCCCB', // Light Pink
+      '#C7CEEA', // Lavender
+      '#F0E68C', // Khaki
+      '#DDA0DD', // Plum
+      '#98D8C8', // Mint
+      '#F7DC6F', // Light Yellow
+      '#AED6F1', // Sky Blue
+      '#F8B88B', // Peach
+      '#D2B4DE', // Light Purple
+      '#A9DFBF', // Light Green
+      '#FAD7A0', // Light Orange
+      '#D5DBDB', // Light Gray
+      '#F9E79F', // Light Gold
+    ]
+
+    // Get all existing staff colors for this salon
+    const { data: existingStaff } = await supabase
+      .from('staff')
+      .select('color')
+      .eq('salon_id', salonId)
+      .not('color', 'is', null)
+
+    const usedColors = new Set(existingStaff?.map(s => s.color) || [])
+
+    // Find first unused color
+    for (const color of colorPalette) {
+      if (!usedColors.has(color)) {
+        return color
+      }
+    }
+
+    // If all colors are used, generate a random color
+    const randomColor = () => {
+      const hue = Math.floor(Math.random() * 360)
+      const saturation = 60 + Math.floor(Math.random() * 20) // 60-80%
+      const lightness = 80 + Math.floor(Math.random() * 15) // 80-95%
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+    }
+
+    let newColor = randomColor()
+    // Ensure it's unique
+    while (usedColors.has(newColor)) {
+      newColor = randomColor()
+    }
+    return newColor
+  }
+
   const handleSave = async () => {
     if (!formData.full_name.trim()) {
       showToast('Ad soyad gereklidir', 'error')
@@ -394,7 +532,9 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
           loadStaff()
         }
       } else {
-        // Create new staff
+        // Create new staff - assign unique color
+        const uniqueColor = await getUniqueColor()
+        
         const { data: newStaff, error } = await supabase
           .from('staff')
           .insert({
@@ -404,6 +544,7 @@ export default function StaffManagement({ salonId, profileId }: StaffManagementP
             work_start_time: formData.work_start_time.trim() || null,
             work_end_time: formData.work_end_time.trim() || null,
             created_by: profileId,
+            color: uniqueColor,
           })
           .select()
           .single()

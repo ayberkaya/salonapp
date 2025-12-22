@@ -47,7 +47,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const { showToast } = useToast()
 
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [staffList, setStaffList] = useState<Array<{ id: string; full_name: string; work_start_time: string | null; work_end_time: string | null }>>([])
+  const [staffList, setStaffList] = useState<Array<{ id: string; full_name: string; work_start_time: string | null; work_end_time: string | null; color: string | null }>>([])
   const [loading, setLoading] = useState(true)
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('all')
@@ -85,13 +85,93 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
   const loadStaff = async () => {
     const { data } = await supabase
       .from('staff')
-      .select('id, full_name, work_start_time, work_end_time')
+      .select('id, full_name, work_start_time, work_end_time, color')
       .eq('salon_id', profile.salon_id)
       .eq('is_active', true)
       .order('full_name')
 
     if (data) {
-      setStaffList(data)
+      // Assign colors to staff members that don't have one
+      const staffWithoutColor = data.filter(s => !s.color)
+      if (staffWithoutColor.length > 0) {
+        // Get all existing colors
+        const existingColors = new Set(
+          data
+            .filter(s => s.color)
+            .map(s => s.color)
+        )
+
+        // Color palette
+        const colorPalette = [
+          '#FFB3BA', // Pastel Pink
+          '#BAFFC9', // Pastel Green
+          '#BAE1FF', // Pastel Blue
+          '#FFFFBA', // Pastel Yellow
+          '#FFDFBA', // Pastel Orange
+          '#E0BBE4', // Pastel Purple
+          '#B4E4D9', // Pastel Turquoise
+          '#FFCCCB', // Light Pink
+          '#C7CEEA', // Lavender
+          '#F0E68C', // Khaki
+          '#DDA0DD', // Plum
+          '#98D8C8', // Mint
+          '#F7DC6F', // Light Yellow
+          '#AED6F1', // Sky Blue
+          '#F8B88B', // Peach
+          '#D2B4DE', // Light Purple
+          '#A9DFBF', // Light Green
+          '#FAD7A0', // Light Orange
+          '#D5DBDB', // Light Gray
+          '#F9E79F', // Light Gold
+        ]
+
+        // Assign colors to staff without colors
+        for (const staffMember of staffWithoutColor) {
+          // Find first unused color from palette
+          let assignedColor: string | null = null
+          for (const color of colorPalette) {
+            if (!existingColors.has(color)) {
+              assignedColor = color
+              existingColors.add(color)
+              break
+            }
+          }
+
+          // If all palette colors are used, generate random color
+          if (!assignedColor) {
+            const randomColor = () => {
+              const hue = Math.floor(Math.random() * 360)
+              const saturation = 60 + Math.floor(Math.random() * 20) // 60-80%
+              const lightness = 80 + Math.floor(Math.random() * 15) // 80-95%
+              return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+            }
+            assignedColor = randomColor()
+            // Ensure it's unique
+            while (existingColors.has(assignedColor)) {
+              assignedColor = randomColor()
+            }
+            existingColors.add(assignedColor)
+          }
+
+          // Update staff member with color
+          await supabase
+            .from('staff')
+            .update({ color: assignedColor })
+            .eq('id', staffMember.id)
+        }
+
+        // Reload staff to get updated colors
+        const { data: updatedData } = await supabase
+          .from('staff')
+          .select('id, full_name, work_start_time, work_end_time, color')
+          .eq('salon_id', profile.salon_id)
+          .eq('is_active', true)
+          .order('full_name')
+
+        setStaffList(updatedData || [])
+      } else {
+        setStaffList(data)
+      }
     }
   }
 
@@ -106,7 +186,7 @@ export default function AppointmentsList({ profile }: AppointmentsListProps) {
           customers (full_name, phone),
           appointment_staff (
             staff_id,
-            staff (full_name)
+            staff (full_name, color)
           ),
           appointment_services (
             service_id,

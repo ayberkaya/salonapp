@@ -478,10 +478,10 @@ export default function AppointmentModal({
 
     setSaving(true)
     try {
-      // Combine date and time
-      const appointmentDateTime = new Date(
-        `${formData.appointment_date}T${formData.appointment_time}`
-      ).toISOString()
+      // Combine date and time - use local timezone to avoid timezone conversion issues
+      const [year, month, day] = formData.appointment_date.split('-').map(Number)
+      const [hours, minutes] = formData.appointment_time.split(':').map(Number)
+      const appointmentDateTime = new Date(year, month - 1, day, hours, minutes).toISOString()
 
       // Collect unique staff and service IDs from service rows
       const uniqueStaffIds = Array.from(new Set(

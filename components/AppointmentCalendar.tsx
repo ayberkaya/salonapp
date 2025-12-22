@@ -23,6 +23,7 @@ type Appointment = {
     staff_id: string
     staff: {
       full_name: string
+      color: string | null
     }
   }>
   appointment_services: Array<{
@@ -38,6 +39,7 @@ type Staff = {
   full_name: string
   work_start_time: string | null
   work_end_time: string | null
+  color: string | null
 }
 
 interface AppointmentCalendarProps {
@@ -138,41 +140,11 @@ export default function AppointmentCalendar({
     return slots
   }, [openingTime, closingTime])
 
-  // Get all unique staff from appointments for the selected day
-  // If no appointments have staff, show all staff
+  // Get all staff for the selected day - always show all staff so users can add appointments
   const getStaffForDay = (date: Date): Staff[] => {
-    const dayAppointments = getAppointmentsForDate(date)
-    const staffMap = new Map<string, Staff>()
-    
-    dayAppointments.forEach(apt => {
-      apt.appointment_staff.forEach((as: any) => {
-        if (as.staff_id && as.staff?.full_name) {
-          if (!staffMap.has(as.staff_id)) {
-            // Find staff from staffList to get working hours
-            const staffFromList = staffList.find(s => s.id === as.staff_id)
-            staffMap.set(as.staff_id, {
-              id: as.staff_id,
-              full_name: as.staff.full_name,
-              work_start_time: staffFromList?.work_start_time || null,
-              work_end_time: staffFromList?.work_end_time || null
-            })
-          }
-        }
-      })
-    })
-    
-    // If no staff in appointments, show all staff
-    if (staffMap.size === 0 && staffList.length > 0) {
-      return staffList
-    }
-    
-    // If we have staff from appointments, return them
-    if (staffMap.size > 0) {
-      return Array.from(staffMap.values())
-    }
-    
-    // If no staff at all, return empty array
-    return []
+    // Always return all staff so users can add appointments to any staff member
+    // This allows adding appointments even when no appointments exist for that day
+    return staffList
   }
 
   // Get time slots filtered by staff working hours and salon hours
@@ -219,15 +191,15 @@ export default function AppointmentCalendar({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+        return 'text-yellow-800 border-yellow-300'
       case 'CONFIRMED':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return 'text-blue-800 border-blue-300'
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'text-green-800 border-green-300'
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800 border-red-300'
+        return 'text-red-800 border-red-300'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'text-gray-800 border-gray-300'
     }
   }
 
@@ -261,7 +233,7 @@ export default function AppointmentCalendar({
                 onClick={prevMonth}
                 className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-5 w-5 text-black" />
               </button>
               <h2 className="text-base sm:text-xl font-semibold text-gray-900 text-center sm:text-left flex-1 sm:flex-initial">
                 {format(currentMonth, 'MMMM yyyy', { locale: tr })}
@@ -270,7 +242,7 @@ export default function AppointmentCalendar({
                 onClick={nextMonth}
                 className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-5 w-5 text-black" />
               </button>
             </>
           ) : (
@@ -279,7 +251,7 @@ export default function AppointmentCalendar({
                 onClick={prevDay}
                 className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-5 w-5 text-black" />
               </button>
               <h2 className="text-sm sm:text-xl font-semibold text-gray-900 text-center sm:text-left flex-1 sm:flex-initial">
                 {format(selectedDay, 'd MMMM yyyy', { locale: tr })}
@@ -288,7 +260,7 @@ export default function AppointmentCalendar({
                 onClick={nextDay}
                 className="rounded-lg p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-5 w-5 text-black" />
               </button>
             </>
           )}
@@ -387,31 +359,41 @@ export default function AppointmentCalendar({
                   {format(day, 'd')}
                 </div>
                 <div className="space-y-1">
-                  {dayAppointments.slice(0, 3).map((apt) => (
-                    <div
-                      key={apt.id}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onAppointmentClick(apt)
-                      }}
-                      className={`
-                        text-xs px-1.5 py-0.5 rounded border truncate
-                        ${getStatusColor(apt.status)}
-                        hover:opacity-80 cursor-pointer
-                      `}
-                      title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(new Date(apt.appointment_date), 'HH:mm')}`}
-                    >
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-2.5 w-2.5" />
-                        <span className="truncate">
-                          {format(new Date(apt.appointment_date), 'HH:mm')}
-                        </span>
+                  {dayAppointments.slice(0, 3).map((apt) => {
+                    // Get staff color from appointment - use first staff member's color
+                    const staffColor = apt.appointment_staff && apt.appointment_staff.length > 0
+                      ? apt.appointment_staff[0].staff?.color || null
+                      : null
+                    
+                    return (
+                      <div
+                        key={apt.id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onAppointmentClick(apt)
+                        }}
+                        className={`
+                          text-xs px-1.5 py-0.5 rounded border truncate
+                          ${getStatusColor(apt.status)}
+                          hover:opacity-80 cursor-pointer
+                        `}
+                        style={{
+                          backgroundColor: staffColor || undefined,
+                        }}
+                        title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(new Date(apt.appointment_date), 'HH:mm')}`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-2.5 w-2.5" />
+                          <span className="truncate">
+                            {format(new Date(apt.appointment_date), 'HH:mm')}
+                          </span>
+                        </div>
+                        <div className="truncate font-medium">
+                          {apt.customers?.full_name || 'Bilinmeyen'}
+                        </div>
                       </div>
-                      <div className="truncate font-medium">
-                        {apt.customers?.full_name || 'Bilinmeyen'}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {dayAppointments.length > 3 && (
                     <div className="text-xs text-gray-500 px-1.5">
                       +{dayAppointments.length - 3} daha
@@ -437,7 +419,10 @@ export default function AppointmentCalendar({
                 dayStaff.map((staff) => (
                   <div
                     key={staff.id}
-                    className="bg-gray-50 border border-gray-200 p-1 sm:p-2 text-center text-xs sm:text-sm font-semibold text-gray-700"
+                    className="border border-gray-200 p-1 sm:p-2 text-center text-xs sm:text-sm font-semibold text-gray-700"
+                    style={{
+                      backgroundColor: staff.color || '#f9fafb',
+                    }}
                   >
                     {staff.full_name}
                   </div>
@@ -505,7 +490,8 @@ export default function AppointmentCalendar({
                             const aptHour = aptDate.getHours()
                             const aptMinutes = aptDate.getMinutes()
                             
-                            // Check if appointment starts in this time slot
+                            // Check if appointment starts in this time slot (exact match required)
+                            // Randevu sadece başladığı slot'ta gösterilmeli
                             if (aptHour !== timeSlot.hour || aptMinutes !== timeSlot.minute) {
                               return false
                             }
@@ -523,7 +509,7 @@ export default function AppointmentCalendar({
                           return (
                             <div
                               key={staff.id}
-                              className={`border border-gray-200 p-1 min-h-[30px] relative transition-colors ${
+                              className={`border border-gray-200 p-1 min-h-[30px] relative transition-colors overflow-hidden ${
                                 isPastTime 
                                   ? 'bg-gray-50 opacity-50 cursor-not-allowed' 
                                   : 'bg-white hover:bg-gray-50 cursor-pointer'
@@ -538,7 +524,13 @@ export default function AppointmentCalendar({
                             {slotAppointments.map((apt) => {
                               const aptDate = new Date(apt.appointment_date)
                               const duration = apt.duration_minutes || 60
-                              const heightInSlots = Math.ceil(duration / 30)
+                              // Randevu sadece kendi slot'unda görünsün, diğer slotlara kaymasın
+                              const slotHeight = 30 // Her slot 30px yüksekliğinde
+                              
+                              // Get staff color from appointment - use first staff member's color
+                              const staffColor = apt.appointment_staff && apt.appointment_staff.length > 0
+                                ? apt.appointment_staff[0].staff?.color || null
+                                : null
                               
                               return (
                                 <div
@@ -553,9 +545,12 @@ export default function AppointmentCalendar({
                                   `}
                                   style={{
                                     top: '2px',
-                                    height: `${heightInSlots * 30 - 4}px`,
+                                    height: `${slotHeight - 4}px`,
+                                    maxHeight: `${slotHeight - 4}px`,
+                                    overflow: 'hidden',
+                                    backgroundColor: staffColor || undefined,
                                   }}
-                                  title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(aptDate, 'HH:mm')}`}
+                                  title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(aptDate, 'HH:mm')} (${duration} dk)`}
                                 >
                                   <div className="font-medium truncate">
                                     {apt.customers?.full_name || 'Bilinmeyen'}
@@ -576,7 +571,7 @@ export default function AppointmentCalendar({
                         
                         return (
                           <div
-                            className={`border border-gray-200 p-1 min-h-[30px] relative transition-colors ${
+                            className={`border border-gray-200 p-1 min-h-[30px] relative transition-colors overflow-hidden ${
                               isPastTime 
                                 ? 'bg-gray-50 opacity-50 cursor-not-allowed' 
                                 : 'bg-white hover:bg-gray-50 cursor-pointer'
@@ -599,7 +594,13 @@ export default function AppointmentCalendar({
                         }).map((apt) => {
                           const aptDate = new Date(apt.appointment_date)
                           const duration = apt.duration_minutes || 60
-                          const heightInSlots = Math.ceil(duration / 30)
+                          // Randevu sadece kendi slot'unda görünsün, diğer slotlara kaymasın
+                          const slotHeight = 30 // Her slot 30px yüksekliğinde
+                          
+                          // Get staff color from appointment - use first staff member's color
+                          const staffColor = apt.appointment_staff && apt.appointment_staff.length > 0
+                            ? apt.appointment_staff[0].staff?.color || null
+                            : null
                           
                           return (
                             <div
@@ -614,9 +615,12 @@ export default function AppointmentCalendar({
                               `}
                               style={{
                                 top: '2px',
-                                height: `${heightInSlots * 30 - 4}px`,
+                                height: `${slotHeight - 4}px`,
+                                maxHeight: `${slotHeight - 4}px`,
+                                overflow: 'hidden',
+                                backgroundColor: staffColor || undefined,
                               }}
-                              title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(aptDate, 'HH:mm')}`}
+                              title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(aptDate, 'HH:mm')} (${duration} dk)`}
                             >
                               <div className="font-medium truncate">
                                 {apt.customers?.full_name || 'Bilinmeyen'}
