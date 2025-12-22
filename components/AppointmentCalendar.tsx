@@ -389,7 +389,9 @@ export default function AppointmentCalendar({
                           </span>
                         </div>
                         <div className="truncate font-medium">
-                          {apt.customers?.full_name || 'Bilinmeyen'}
+                          {apt.appointment_services && apt.appointment_services.length > 0
+                            ? apt.appointment_services.map((as: any) => as.services?.name).filter(Boolean).join(', ') || 'Hizmet yok'
+                            : 'Hizmet yok'}
                         </div>
                       </div>
                     )
@@ -553,7 +555,9 @@ export default function AppointmentCalendar({
                                   title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(aptDate, 'HH:mm')} (${duration} dk)`}
                                 >
                                   <div className="font-medium truncate">
-                                    {apt.customers?.full_name || 'Bilinmeyen'}
+                                    {apt.appointment_services && apt.appointment_services.length > 0
+                                      ? apt.appointment_services.map((as: any) => as.services?.name).filter(Boolean).join(', ') || 'Hizmet yok'
+                                      : 'Hizmet yok'}
                                   </div>
                                   <div className="text-xs opacity-80">
                                     {format(aptDate, 'HH:mm')}
@@ -623,7 +627,9 @@ export default function AppointmentCalendar({
                               title={`${apt.customers?.full_name || 'Bilinmeyen'} - ${format(aptDate, 'HH:mm')} (${duration} dk)`}
                             >
                               <div className="font-medium truncate">
-                                {apt.customers?.full_name || 'Bilinmeyen'}
+                                {apt.appointment_services && apt.appointment_services.length > 0
+                                  ? apt.appointment_services.map((as: any) => as.services?.name).filter(Boolean).join(', ') || 'Hizmet yok'
+                                  : 'Hizmet yok'}
                               </div>
                               <div className="text-xs opacity-80">
                                 {format(aptDate, 'HH:mm')}
