@@ -28,6 +28,7 @@ type Appointment = {
     staff_id: string
     staff: {
       full_name: string
+      color: string | null
     }
   }>
   appointment_services: Array<{
